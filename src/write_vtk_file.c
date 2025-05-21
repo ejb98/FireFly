@@ -8,13 +8,13 @@ void write_vtk_file(const Mesh *mesh, const char *file_name) {
     FILE *fp = fopen(file_name, "w");
 
     if (fp == NULL) {
-        perror("failed to open file");
+        fprintf(stderr, "failed to open file");
 
         return;
     }
 
     if (isempty(mesh)) {
-        perror("write_to_vtk_file: unable to write empty mesh to file");
+        fprintf(stderr, "write_to_vtk_file: unable to write empty mesh to file");
         fclose(fp);
 
         return;
@@ -22,7 +22,7 @@ void write_vtk_file(const Mesh *mesh, const char *file_name) {
 
     int num_rows = mesh->num_rows;
     if (num_rows < 2) {
-        perror("write_to_vtk_file: mesh must have at least 2 rows");
+        fprintf(stderr, "write_to_vtk_file: mesh must have at least 2 rows");
         fclose(fp);
 
         return;
@@ -30,7 +30,7 @@ void write_vtk_file(const Mesh *mesh, const char *file_name) {
 
     int num_cols = mesh->num_cols;
     if (num_cols < 2) {
-        perror("write_to_vtk_file: mesh must have at least 2 columns");
+        fprintf(stderr, "write_to_vtk_file: mesh must have at least 2 columns");
         fclose(fp);
 
         return;

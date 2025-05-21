@@ -9,6 +9,7 @@ void shed_wake(Wing *wing) {
 
     double rot_mat[3][3];
 
+    int iwing;
     int iring;
     int iwake;
     int icurr;
@@ -78,5 +79,23 @@ void shed_wake(Wing *wing) {
         wing->wake_rings.x[i] = point.x;
         wing->wake_rings.y[i] = point.y;
         wing->wake_rings.z[i] = point.z;
+    }
+
+    if (wing->wake_rings.num_rows > 1) {
+        for (int j = 0; j < wing->num_spanwise_panels; j++) {
+            if (wing->wake_rings.num_rows > 2) {
+                for (int i = wing->wake_rings.num_rows - 2; i > 0; i--) {
+                    icurr = sub2ind(i, j, wing->num_spanwise_panels);
+                    iprev = sub2ind(i - 1, j, wing->num_spanwise_panels);
+
+                    wing->wake_vorticity[icurr] = wing->wake_vorticity[iprev];
+                }
+            }
+
+            iwing = sub2ind(wing->num_chordwise_panels - 1, j, wing->num_spanwise_panels);
+            iwake = sub2ind(0, j, wing->num_spanwise_panels);
+
+            wing->wake_vorticity[iwake] = wing->bound_vorticity[iwing];
+        }
     }
 }

@@ -7,8 +7,10 @@
 #include "process.h"
 #include "init_wing.h"
 #include "write_vtk_file.h"
+#include "print_firefly.h"
 #include "print_attributes.h"
 
+#define SAVE_VTK_FILES 0
 #define NUM_TIME_STEPS 160
 #define SWEEP_ANGLE_LEADING 70.0
 #define SWEEP_ANGLE_TRAILING 80.0
@@ -30,9 +32,9 @@
 #define PI 3.141592654
 
 int main(int argc, char **argv) {
-    clock_t start, end;
+    print_firefly();
 
-    start = clock();
+    clock_t start = clock();
 
     double t;
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
@@ -57,18 +59,21 @@ int main(int argc, char **argv) {
                      .wake_offset = dx_wake};
 
     if (init_wing(&wing_obj)) {
-        perror("main: init_wing failed to allocate all memory, exiting now");
+        fprintf(stderr, "main: init_wing failed to allocate all memory, exiting now");
         return 1;
     }
 
     Wing *wing = &wing_obj;
 
-    write_vtk_file(&wing_obj.surface_panels, "surface_panels.vtk");
-    write_vtk_file(&wing_obj.bound_rings, "bound_rings.vtk");
-    write_vtk_file(&wing_obj.control_points, "control_points.vtk");
-
+    if (SAVE_VTK_FILES) {
+        write_vtk_file(&wing_obj.surface_panels, "surface_panels.vtk");
+        write_vtk_file(&wing_obj.bound_rings, "bound_rings.vtk");
+        write_vtk_file(&wing_obj.control_points, "control_points.vtk");
+    }
 
     for (int i = 0; i < NUM_TIME_STEPS; i++) {
+        printf("Solving Step %d...", i);
+
         t = i * dt;
 
         wing_obj.position.x = -FAR_FIELD_VELOCITY * t;
@@ -80,21 +85,19 @@ int main(int argc, char **argv) {
 
         process(wing, dt);
 
-        if (i) {
-            // TODO: call the solve(wing) function for i > 0 since vorticity is already zero at i == 0
-        }
-
         // TODO: call rollup_wake(wing) function to assign vorticity and perturb the wake
 
-        if (i) {
+        if (i && SAVE_VTK_FILES) {
             snprintf(file_name, sizeof(file_name), "wake_rings.vtk.%d", i);
             write_vtk_file(&wing_obj.wake_rings, file_name);
-        } 
+        }
+        
+        printf("done\n");
     }
 
-    end = clock();
-    elapsed_time = ((double) (end - start)) / CLOCKS_PER_SEC;
+    elapsed_time = ((double) (clock() - start)) / CLOCKS_PER_SEC;
 
+    putchar('\n');
     print_attributes(wing);
     printf("Elapsed Time: %.3f sec\n", elapsed_time);
 

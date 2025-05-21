@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "mesh.h"
+#include "check_null.h"
 
 Mesh construct_mesh(int num_rows, int num_cols) {
     size_t num_bytes = sizeof(double) * num_rows * num_cols;
@@ -12,17 +13,9 @@ Mesh construct_mesh(int num_rows, int num_cols) {
                  .y = (double *) malloc(num_bytes),
                  .z = (double *) malloc(num_bytes)};
 
-    if (!mesh.x) {
-        perror("construct_mesh: failed to allocate memory for x");
-    }
-
-    if (!mesh.y) {
-        perror("construct_mesh: failed to allocate memory for y");
-    }
-
-    if (!mesh.z) {
-        perror("construct_mesh: failed to allocate memory for z");
-    }
+    check_null("construct_mesh", "x", mesh.x);
+    check_null("construct_mesh", "y", mesh.y);
+    check_null("construct_mesh", "z", mesh.z);
 
     return mesh;
 }

@@ -25,10 +25,14 @@ typedef struct Wing {
     double surface_area;
     double aspect_ratio;
 
-    double *vorticity_strengths;
+    double *wake_vorticity;
+    double *bound_vorticity;
     double *normal_velocities;
-    double *a_wing_on_wing;
     double *b_wing_on_wing;
+    double *b_wake_on_wing;
+    double *a_wing_on_wing;
+    double *a_wake_on_wing;
+    double *right_hand_side;
 
     Mesh normal_vectors;
     Mesh surface_panels;
