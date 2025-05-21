@@ -1,1 +1,1 @@
-clang -O1 -std=c99 -Wall -Werror src\*.c -Iinclude -IC:\OpenBLAS\include -LC:\OpenBLAS\lib -lopenblas -o main.exe
+clang -O1 -std=c99 -Wall -Werror src\*.c -Iinclude -IC:\OpenBLAS\include -LC:\OpenBLAS\lib -lopenblas -o firefly.exe
