@@ -82,7 +82,6 @@ int main(int argc, char **argv) {
     elapsed_time = ((double) (end - start)) / CLOCKS_PER_SEC;
 
     printf("Elapsed Time: %.3f sec\n", elapsed_time);
-    printf("Wing Size: %zu bytes\n", sizeof(Wing));
 
     return 0;
 }
