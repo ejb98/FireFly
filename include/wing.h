@@ -15,18 +15,6 @@ typedef struct Wing {
 
     int *pivot_vector;
 
-    double x_pos;
-    double y_pos;
-    double z_pos;
-    double x_pos_prev;
-    double y_pos_prev;
-    double z_pos_prev;
-    double yaw;
-    double roll;
-    double pitch;
-    double yaw_prev;
-    double roll_prev;
-    double pitch_prev;
     double cutoff;
     double semi_span;
     double root_chord;
@@ -48,6 +36,11 @@ typedef struct Wing {
     Mesh bound_rings;
     Mesh wake_rings;
 
+    Vector position;
+    Vector rotation;
+    Vector position_prev;
+    Vector rotation_prev;
+    
     Vector *buffer;
 } Wing;
 

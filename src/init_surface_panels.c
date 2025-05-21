@@ -10,7 +10,6 @@ void init_surface_panels(Wing *wing) {
 
     const double pi = 3.141592654;
 
-    double x, y, z;
     double x_norm;
     double z_norm;
     double local_chord;
@@ -27,10 +26,13 @@ void init_surface_panels(Wing *wing) {
     double tan_leading = tan(pi / 2.0 - lambda_leading);
     double tan_trailing = tan(pi / 2.0 - lambda_trailing);
 
-    assign_rotation(rotation_matrix, wing->angle_of_attack * pi / 180.0, 0.0, 0.0);
+    Vector point;
+    Vector rotation_aoa = {0.0, wing->angle_of_attack * pi / 180.0, 0.0};
+
+    assign_rotation(rotation_matrix, &rotation_aoa);
 
     for (int j = 0; j < wing->surface_panels.num_cols; j++) {
-        y = wing->semi_span * j / wing->num_spanwise_panels;
+        point.y = wing->semi_span * j / wing->num_spanwise_panels;
 
         for (int i = 0; i < wing->surface_panels.num_rows; i++) {
             x_norm = ((double) i) / wing->num_chordwise_panels;
@@ -43,31 +45,31 @@ void init_surface_panels(Wing *wing) {
                 z_norm = (m / ((1 - p) * (1 - p))) * (1 - 2 * p + constant);
             }
 
-            offset_leading = y * tan_leading;
-            offset_trailing = y * tan_trailing;
+            offset_leading = point.y * tan_leading;
+            offset_trailing = point.y * tan_trailing;
 
             local_chord = wing->root_chord + offset_trailing - offset_leading;
 
-            x = offset_leading + x_norm * local_chord;
-            z = local_chord * z_norm;
+            point.x = offset_leading + x_norm * local_chord;
+            point.z = local_chord * z_norm;
 
             if (j == wing->surface_panels.num_cols - 1) {
                 if (i == 0) {
-                    x_tip_leading = x;
+                    x_tip_leading = point.x;
                 }
 
                 if (i == wing->surface_panels.num_rows - 1) {
-                    x_tip_trailing = x;
+                    x_tip_trailing = point.x;
                 }
             }
 
-            apply_rotation(rotation_matrix, &x, &y, &z);
+            apply_rotation(rotation_matrix, &point);
 
             index = sub2ind(i, j, wing->surface_panels.num_cols);
 
-            wing->surface_panels.x[index] = x;
-            wing->surface_panels.y[index] = y;
-            wing->surface_panels.z[index] = z;
+            wing->surface_panels.x[index] = point.x;
+            wing->surface_panels.y[index] = point.y;
+            wing->surface_panels.z[index] = point.z;
         }
     }
 

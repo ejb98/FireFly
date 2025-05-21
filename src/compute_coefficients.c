@@ -16,7 +16,7 @@ void compute_coefficients(Mesh *points, Mesh *rings, Mesh *normals,
     int num_ring_rows = rings->num_rows - 1;
     int num_ring_cols = rings->num_cols - 1;
     int num_rings = num_ring_rows * num_ring_cols;
-    int i1, i2, i3, i4;
+    int i0, i1, i2, i3;
     int imatrix;
     int iring;
     int ibuff;
@@ -25,7 +25,7 @@ void compute_coefficients(Mesh *points, Mesh *rings, Mesh *normals,
     Vector normal;
     Vector velocity;
     Vector downwash;
-    Vector p1, p2, p3, p4;
+    Vector p0, p1, p2, p3;
 
     for (int ipoint = 0; ipoint < num_points; ipoint++) {
         mesh_to_vector(points, ipoint, &point);
@@ -41,15 +41,15 @@ void compute_coefficients(Mesh *points, Mesh *rings, Mesh *normals,
 
             ibuff = 0;
             for (int j = 0; j < num_ring_cols; j++) {
-                i1 = sub2ind(i, j, rings->num_cols);
-                i2 = sub2ind(i, j + 1, rings->num_cols);
-                i3 = sub2ind(i + 1, j + 1, rings->num_cols);
-                i4 = sub2ind(i + 1, j, rings->num_cols);
+                i0 = sub2ind(i, j, rings->num_cols);
+                i1 = sub2ind(i, j + 1, rings->num_cols);
+                i2 = sub2ind(i + 1, j + 1, rings->num_cols);
+                i3 = sub2ind(i + 1, j, rings->num_cols);
 
+                mesh_to_vector(rings, i0, &p0);
                 mesh_to_vector(rings, i1, &p1);
                 mesh_to_vector(rings, i2, &p2);
                 mesh_to_vector(rings, i3, &p3);
-                mesh_to_vector(rings, i4, &p4);
 
                 if (i > 0) {
                     buffer[ibuff].x = -buffer[4 * j + 2].x;
@@ -58,11 +58,11 @@ void compute_coefficients(Mesh *points, Mesh *rings, Mesh *normals,
 
                     ibuff++;
                 } else {
-                    induce_by_segment(&point, &p1, &p2, buffer + ibuff++, 1.0, cutoff);
+                    induce_by_segment(&point, &p0, &p1, buffer + ibuff++, 1.0, cutoff);
                 }
 
+                induce_by_segment(&point, &p1, &p2, buffer + ibuff++, 1.0, cutoff);
                 induce_by_segment(&point, &p2, &p3, buffer + ibuff++, 1.0, cutoff);
-                induce_by_segment(&point, &p3, &p4, buffer + ibuff++, 1.0, cutoff);
 
                 if (j > 0) {
                     buffer[ibuff].x = -buffer[ibuff - 6].x;
@@ -71,7 +71,7 @@ void compute_coefficients(Mesh *points, Mesh *rings, Mesh *normals,
 
                     ibuff++;
                 } else {
-                    induce_by_segment(&point, &p4, &p1, buffer + ibuff++, 1.0, cutoff);
+                    induce_by_segment(&point, &p3, &p0, buffer + ibuff++, 1.0, cutoff);
                 }
 
                 downwash.x = buffer[ibuff - 3].x + buffer[ibuff - 1].x;

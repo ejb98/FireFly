@@ -10,19 +10,19 @@
 void process(Wing *wing, double delta_time) {
     int ipoint;
 
-    double x_prev, y_prev, z_prev;
-    double x_curr, y_curr, z_curr;
     double rot_mat[3][3];
     double rot_mat_prev[3][3];
 
     wing->iteration++;
 
+    Vector curr;
+    Vector prev;
     Vector normal;
     Vector velocity;
 
     if (wing->iteration) {
-        assign_rotation(rot_mat, wing->pitch, wing->roll, wing->yaw);
-        assign_rotation(rot_mat_prev, wing->pitch_prev, wing->roll_prev, wing->yaw_prev);
+        assign_rotation(rot_mat, &wing->rotation);
+        assign_rotation(rot_mat_prev, &wing->rotation_prev);
     }
 
     for (int j = 0; j < wing->num_spanwise_panels; j++) {
@@ -32,30 +32,30 @@ void process(Wing *wing, double delta_time) {
             if (!wing->iteration) {
                 wing->normal_velocities[ipoint] = 0.0;
             } else {
-                x_curr = wing->control_points.x[ipoint];
-                y_curr = wing->control_points.y[ipoint];
-                z_curr = wing->control_points.z[ipoint];
+                curr.x = wing->control_points.x[ipoint];
+                curr.y = wing->control_points.y[ipoint];
+                curr.z = wing->control_points.z[ipoint];
 
-                x_prev = x_curr;
-                y_prev = y_curr;
-                z_prev = z_curr;
+                prev.x = curr.x;
+                prev.y = curr.y;
+                prev.z = curr.z;
 
-                apply_rotation(rot_mat, &x_curr, &y_curr, &z_curr);
-                apply_rotation(rot_mat_prev, &x_prev, &y_prev, &z_prev);
+                apply_rotation(rot_mat, &curr);
+                apply_rotation(rot_mat_prev, &prev);
 
-                x_curr += wing->x_pos;
-                y_curr += wing->y_pos;
-                z_curr += wing->z_pos;
+                curr.x += wing->position.x;
+                curr.y += wing->position.y;
+                curr.z += wing->position.z;
 
-                x_prev += wing->x_pos_prev;
-                y_prev += wing->y_pos_prev;
-                z_prev += wing->z_pos_prev;
+                prev.x += wing->position_prev.x;
+                prev.y += wing->position_prev.y;
+                prev.z += wing->position_prev.z;
                 
                 mesh_to_vector(&wing->normal_vectors, ipoint, &normal);
 
-                velocity.x = (x_curr - x_prev) / delta_time;
-                velocity.y = (y_curr - y_prev) / delta_time;
-                velocity.z = (z_curr - z_prev) / delta_time;
+                velocity.x = (curr.x - prev.x) / delta_time;
+                velocity.y = (curr.y - prev.y) / delta_time;
+                velocity.z = (curr.z - prev.z) / delta_time;
 
                 wing->normal_velocities[ipoint] = dot(&velocity, &normal);
             }
@@ -64,11 +64,6 @@ void process(Wing *wing, double delta_time) {
 
     shed_wake(wing);
 
-    wing->x_pos_prev = wing->x_pos;
-    wing->y_pos_prev = wing->y_pos;
-    wing->z_pos_prev = wing->z_pos;
-
-    wing->yaw_prev = wing->yaw;
-    wing->roll_prev = wing->roll;
-    wing->pitch_prev = wing->pitch;
+    wing->position_prev = wing->position;
+    wing->rotation_prev = wing->rotation;
 }

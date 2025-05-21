@@ -11,6 +11,8 @@
 #include "compute_coefficients.h"
 
 int init_wing(Wing *wing) {
+    wing->iteration = -1;
+    
     int num_rows_wake = wing->num_wake_point_rows;
     int num_rows = wing->num_chordwise_panels;
     int num_cols = wing->num_spanwise_panels;

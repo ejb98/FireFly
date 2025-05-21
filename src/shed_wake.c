@@ -5,7 +5,8 @@
 #include "assign_rotation.h"
 
 void shed_wake(Wing *wing) {
-    double x, y, z;
+    Vector point;
+
     double rot_mat[3][3];
 
     int iring;
@@ -17,30 +18,32 @@ void shed_wake(Wing *wing) {
     if (wing->iteration) {
         num_points = get_size(&wing->wake_rings);
 
-        assign_rotation(rot_mat, wing->pitch_prev, wing->roll_prev, wing->yaw_prev);
+        assign_rotation(rot_mat, &wing->rotation_prev);
 
         for (int i = 0; i < num_points; i++) {
-            apply_rotation(rot_mat, wing->wake_rings.x + i,
-                            wing->wake_rings.y + i,
-                            wing->wake_rings.z + i);
+            point.x = wing->wake_rings.x[i];
+            point.y = wing->wake_rings.y[i];
+            point.z = wing->wake_rings.z[i];
 
-            wing->wake_rings.x[i] += wing->x_pos_prev;
-            wing->wake_rings.y[i] += wing->y_pos_prev;
-            wing->wake_rings.z[i] += wing->z_pos_prev;
+            apply_rotation(rot_mat, &point);
+
+            wing->wake_rings.x[i] = point.x + wing->position_prev.x;
+            wing->wake_rings.y[i] = point.y + wing->position_prev.y;
+            wing->wake_rings.z[i] = point.z + wing->position_prev.z;
         }
     }
 
-    assign_rotation(rot_mat, wing->pitch, wing->roll, wing->yaw);
+    assign_rotation(rot_mat, &wing->rotation);
 
     for (int j = 0; j < wing->bound_rings.num_cols; j++) {
         iring = sub2ind(wing->bound_rings.num_rows - 1, j, wing->bound_rings.num_cols);
         iwake = sub2ind(0, j, wing->wake_rings.num_cols);
 
-        x = wing->bound_rings.x[iring];
-        y = wing->bound_rings.y[iring];
-        z = wing->bound_rings.z[iring];
+        point.x = wing->bound_rings.x[iring];
+        point.y = wing->bound_rings.y[iring];
+        point.z = wing->bound_rings.z[iring];
 
-        apply_rotation(rot_mat, &x, &y, &z);
+        apply_rotation(rot_mat, &point);
 
         if (wing->iteration) {
             for (int i = wing->iteration; i > 0; i--) {
@@ -53,23 +56,27 @@ void shed_wake(Wing *wing) {
             }
         }
 
-        wing->wake_rings.x[iwake] = x + wing->x_pos;
-        wing->wake_rings.y[iwake] = y + wing->y_pos;
-        wing->wake_rings.z[iwake] = z + wing->z_pos;
+        wing->wake_rings.x[iwake] = point.x + wing->position.x;
+        wing->wake_rings.y[iwake] = point.y + wing->position.y;
+        wing->wake_rings.z[iwake] = point.z + wing->position.z;
     }
 
     wing->wake_rings.num_rows = wing->iteration + 1;
     num_points = get_size(&wing->wake_rings);
 
-    assign_rotation(rot_mat, -wing->pitch, -wing->roll, -wing->yaw);
+    Vector rotation_negative = {-wing->rotation.x, -wing->rotation.y, -wing->rotation.z};
+
+    assign_rotation(rot_mat, &rotation_negative);
 
     for (int i = 0; i < num_points; i++) {
-        wing->wake_rings.x[i] -= wing->x_pos;
-        wing->wake_rings.y[i] -= wing->y_pos;
-        wing->wake_rings.z[i] -= wing->z_pos;
+        point.x = wing->wake_rings.x[i] - wing->position.x;
+        point.y = wing->wake_rings.y[i] - wing->position.y;
+        point.z = wing->wake_rings.z[i] - wing->position.z;
 
-        apply_rotation(rot_mat, wing->wake_rings.x + i,
-                        wing->wake_rings.y + i,
-                        wing->wake_rings.z + i);
+        apply_rotation(rot_mat, &point);
+
+        wing->wake_rings.x[i] = point.x;
+        wing->wake_rings.y[i] = point.y;
+        wing->wake_rings.z[i] = point.z;
     }
 }

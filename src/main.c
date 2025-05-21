@@ -6,6 +6,8 @@
 #include "wing.h"
 #include "process.h"
 #include "init_wing.h"
+#include "write_vtk_file.h"
+#include "print_attributes.h"
 
 #define NUM_TIME_STEPS 160
 #define SWEEP_ANGLE_LEADING 70.0
@@ -17,7 +19,7 @@
 #define HEAVING_AMPLITUDE 0.0
 #define FAR_FIELD_VELOCITY 10.0
 #define NUM_CHORDWISE_PANELS 4
-#define NUM_SPANWISE_PANELS 4
+#define NUM_SPANWISE_PANELS 13
 #define NUM_WAKE_DEFORMING_ROWS 5
 #define AIR_DENSITY 1.0
 #define ROOT_CHORD 1.0
@@ -37,6 +39,8 @@ int main(int argc, char **argv) {
     double dt = dx / FAR_FIELD_VELOCITY / 4.0;
     double dx_wake = 0.3 * FAR_FIELD_VELOCITY * dt;
     double elapsed_time;
+
+    char file_name[50];
 
     Wing wing_obj = {.num_chordwise_panels = NUM_CHORDWISE_PANELS,
                      .num_spanwise_panels = NUM_SPANWISE_PANELS,
@@ -59,15 +63,20 @@ int main(int argc, char **argv) {
 
     Wing *wing = &wing_obj;
 
+    write_vtk_file(&wing_obj.surface_panels, "surface_panels.vtk");
+    write_vtk_file(&wing_obj.bound_rings, "bound_rings.vtk");
+    write_vtk_file(&wing_obj.control_points, "control_points.vtk");
+
+
     for (int i = 0; i < NUM_TIME_STEPS; i++) {
         t = i * dt;
 
-        wing_obj.x_pos = -FAR_FIELD_VELOCITY * t;
-        wing_obj.y_pos = 0;
-        wing_obj.z_pos = HEAVING_AMPLITUDE * sin(2.0 * PI * HEAVING_FREQUENCY * t);
-        wing_obj.yaw = 0;
-        wing_obj.roll = 0;
-        wing_obj.pitch = PITCHING_AMPLITUDE * sin(2.0 * PI * PITCHING_FREQUENCY * t) * PI / 180.0;
+        wing_obj.position.x = -FAR_FIELD_VELOCITY * t;
+        wing_obj.position.y = 0.0;
+        wing_obj.position.z = HEAVING_AMPLITUDE * sin(2.0 * PI * HEAVING_FREQUENCY * t);
+        wing_obj.rotation.x = 0.0;
+        wing_obj.rotation.y = PITCHING_AMPLITUDE * sin(2.0 * PI * PITCHING_FREQUENCY * t) * PI / 180.0;
+        wing_obj.rotation.z = 0.0;
 
         process(wing, dt);
 
@@ -76,11 +85,17 @@ int main(int argc, char **argv) {
         }
 
         // TODO: call rollup_wake(wing) function to assign vorticity and perturb the wake
+
+        if (i) {
+            snprintf(file_name, sizeof(file_name), "wake_rings.vtk.%d", i);
+            write_vtk_file(&wing_obj.wake_rings, file_name);
+        } 
     }
 
     end = clock();
     elapsed_time = ((double) (end - start)) / CLOCKS_PER_SEC;
 
+    print_attributes(wing);
     printf("Elapsed Time: %.3f sec\n", elapsed_time);
 
     return 0;
