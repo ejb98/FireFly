@@ -63,6 +63,13 @@ void shed_wake(Wing *wing) {
     }
 
     wing->wake_rings.num_rows = wing->iteration + 1;
+
+    if (wing->wake_rings.num_rows < wing->num_wake_deforming_rows) {
+        wing->wake_velocities.num_rows = wing->wake_rings.num_rows;
+    } else {
+        wing->wake_velocities.num_rows = wing->num_wake_deforming_rows;
+    }
+
     num_points = get_size(&wing->wake_rings);
 
     Vector rotation_negative = {-wing->rotation.x, -wing->rotation.y, -wing->rotation.z};

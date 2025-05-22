@@ -1,7 +1,7 @@
 #include "wing.h"
 #include "dgesv.h"
 #include "sub2ind.h"
-#include "compute_coefficients.h"
+#include "induce_velocity.h"
 
 void solve(Wing *wing) {
     int mirror;
@@ -12,21 +12,21 @@ void solve(Wing *wing) {
         append = i;
 
         if (wing->iteration) {
-            compute_coefficients(&wing->control_points,
-                                 &wing->wake_rings,
-                                 &wing->normal_vectors,
-                                 wing->a_wake_on_wing,
-                                 wing->b_wake_on_wing,
-                                 wing->buffer,
-                                 wing->cutoff, mirror, append);
+            induce_velocity(&wing->control_points,
+                            &wing->wake_rings,
+                            &wing->normal_vectors,
+                            wing->a_wake_on_wing,
+                            wing->b_wake_on_wing,
+                            wing->velocity_buffer,
+                            wing->cutoff, mirror, append);
         } else {
-            compute_coefficients(&wing->control_points,
-                                 &wing->bound_rings,
-                                 &wing->normal_vectors,
-                                 wing->a_wing_on_wing,
-                                 wing->b_wing_on_wing,
-                                 wing->buffer,
-                                 wing->cutoff, mirror, append);
+            induce_velocity(&wing->control_points,
+                            &wing->bound_rings,
+                            &wing->normal_vectors,
+                            wing->a_wing_on_wing,
+                            wing->b_wing_on_wing,
+                            wing->velocity_buffer,
+                            wing->cutoff, mirror, append);
         }
     }
 

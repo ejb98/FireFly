@@ -34,6 +34,7 @@ typedef struct Wing {
     double *a_wake_on_wing;
     double *right_hand_side;
 
+    Mesh wake_velocities;
     Mesh normal_vectors;
     Mesh surface_panels;
     Mesh control_points;
@@ -45,7 +46,7 @@ typedef struct Wing {
     Vector position_prev;
     Vector rotation_prev;
     
-    Vector *buffer;
+    Vector *velocity_buffer;
 } Wing;
 
 #endif

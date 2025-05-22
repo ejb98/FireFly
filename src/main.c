@@ -10,7 +10,10 @@
 #include "print_firefly.h"
 #include "print_attributes.h"
 
-#define SAVE_VTK_FILES 0
+#define LOCKED_YAW 0.0
+#define LOCKED_ROLL 0.0
+#define LOCKED_Y_POS 0.0
+#define SAVE_VTK_FILES 1
 #define NUM_TIME_STEPS 160
 #define SWEEP_ANGLE_LEADING 70.0
 #define SWEEP_ANGLE_TRAILING 80.0
@@ -22,7 +25,7 @@
 #define FAR_FIELD_VELOCITY 10.0
 #define NUM_CHORDWISE_PANELS 4
 #define NUM_SPANWISE_PANELS 13
-#define NUM_WAKE_DEFORMING_ROWS 5
+#define NUM_WAKE_DEFORMING_ROWS 160
 #define AIR_DENSITY 1.0
 #define ROOT_CHORD 1.0
 #define SEMI_SPAN 4.0
@@ -59,7 +62,8 @@ int main(int argc, char **argv) {
                      .wake_offset = dx_wake};
 
     if (init_wing(&wing_obj)) {
-        fprintf(stderr, "main: init_wing failed to allocate all memory, exiting now");
+        fprintf(stderr, "main: init_wing failed to allocate all memory");
+
         return 1;
     }
 
@@ -77,11 +81,11 @@ int main(int argc, char **argv) {
         t = i * dt;
 
         wing_obj.position.x = -FAR_FIELD_VELOCITY * t;
-        wing_obj.position.y = 0.0;
+        wing_obj.position.y = LOCKED_Y_POS;
         wing_obj.position.z = HEAVING_AMPLITUDE * sin(2.0 * PI * HEAVING_FREQUENCY * t);
-        wing_obj.rotation.x = 0.0;
+        wing_obj.rotation.x = LOCKED_ROLL;
         wing_obj.rotation.y = PITCHING_AMPLITUDE * sin(2.0 * PI * PITCHING_FREQUENCY * t) * PI / 180.0;
-        wing_obj.rotation.z = 0.0;
+        wing_obj.rotation.z = LOCKED_YAW;
 
         process(wing, dt);
 

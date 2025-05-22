@@ -20,10 +20,7 @@ int init_wing(Wing *wing) {
     int num_wake_vortices = (num_rows_wake - 1) * (num_cols);
 
     wing->surface_panels = construct_mesh(num_rows + 1, num_cols + 1);
-    if (isempty(&wing->surface_panels)) {
-        fprintf(stderr, "init_wing: failed to allocate memory for field surface_panels");
-        return 1;
-    }
+    if (isempty(&wing->surface_panels)) return 1;
 
     wing->control_points = construct_mesh(num_rows, num_cols);
     if (isempty(&wing->control_points)) return 1;
@@ -36,6 +33,9 @@ int init_wing(Wing *wing) {
 
     wing->wake_rings = construct_mesh(num_rows_wake, num_cols + 1);
     if (isempty(&wing->wake_rings)) return 1;
+
+    wing->wake_velocities = construct_mesh(wing->num_wake_deforming_rows, num_cols + 1);
+    if (isempty(&wing->wake_velocities)) return 1;
     
     wing->wake_vorticity = (double *) calloc(num_wake_vortices, sizeof(double));
     if (check_null("init_wing", "wake_vorticity", wing->wake_vorticity)) return 1;
@@ -64,8 +64,8 @@ int init_wing(Wing *wing) {
     wing->pivot_vector = (int *) malloc(sizeof(int) * num_points);
     if (check_null("init_wing", "pivot_vector", wing->pivot_vector)) return 1;
 
-    wing->buffer = (Vector *) malloc(sizeof(Vector) * num_cols * 4);
-    if (check_null("init_wing", "buffer", wing->buffer)) return 1;
+    wing->velocity_buffer = (Vector *) malloc(sizeof(Vector) * num_cols * 4);
+    if (check_null("init_wing", "velocity_buffer", wing->velocity_buffer)) return 1;
 
     init_surface_panels(wing);
     init_control_points(wing);
