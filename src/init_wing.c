@@ -34,8 +34,8 @@ int init_wing(Wing *wing) {
     wing->wake_rings = construct_mesh(num_rows_wake, num_cols + 1);
     if (isempty(&wing->wake_rings)) return 1;
 
-    wing->wake_velocities = construct_mesh(wing->num_wake_deforming_rows, num_cols + 1);
-    if (isempty(&wing->wake_velocities)) return 1;
+    wing->wake_displacements = construct_mesh(num_rows_wake, num_cols + 1);
+    if (isempty(&wing->wake_displacements)) return 1;
     
     wing->wake_vorticity = (double *) calloc(num_wake_vortices, sizeof(double));
     if (check_null("init_wing", "wake_vorticity", wing->wake_vorticity)) return 1;
@@ -46,26 +46,23 @@ int init_wing(Wing *wing) {
     wing->normal_velocities = (double *) calloc(num_points, sizeof(double));
     if (check_null("init_wing", "normal_velocities", wing->normal_velocities)) return 1;
 
-    wing->right_hand_side = (double *) malloc(sizeof(double) * num_points);
+    wing->right_hand_side = (double *) calloc(num_points, sizeof(double));
     if (check_null("init_wing", "right_hand_side", wing->right_hand_side)) return 1;
 
-    wing->a_wing_on_wing = (double *) malloc(sizeof(double) * num_points * num_points);
+    wing->a_wing_on_wing = (double *) calloc(num_points * num_points, sizeof(double));
     if (check_null("init_wing", "a_wing_on_wing", wing->a_wing_on_wing)) return 1;
 
-    wing->b_wing_on_wing = (double *) malloc(sizeof(double) * num_points * num_points);
+    wing->b_wing_on_wing = (double *) calloc(num_points * num_points, sizeof(double));
     if (check_null("init_wing", "b_wing_on_wing", wing->b_wing_on_wing)) return 1;
 
-    wing->a_wake_on_wing = (double *) malloc(sizeof(double) * num_points * num_wake_vortices);
+    wing->a_wake_on_wing = (double *) calloc(num_points * num_wake_vortices, sizeof(double));
     if (check_null("init_wing", "a_wake_on_wing", wing->a_wake_on_wing)) return 1;
 
-    wing->b_wake_on_wing = (double *) malloc(sizeof(double) * num_points * num_wake_vortices);
+    wing->b_wake_on_wing = (double *) calloc(num_points * num_wake_vortices, sizeof(double));
     if (check_null("init_wing", "b_wake_on_wing", wing->b_wake_on_wing)) return 1;
 
-    wing->pivot_vector = (int *) malloc(sizeof(int) * num_points);
+    wing->pivot_vector = (int *) calloc(num_points, sizeof(int));
     if (check_null("init_wing", "pivot_vector", wing->pivot_vector)) return 1;
-
-    wing->velocity_buffer = (Vector *) malloc(sizeof(Vector) * num_cols * 4);
-    if (check_null("init_wing", "velocity_buffer", wing->velocity_buffer)) return 1;
 
     init_surface_panels(wing);
     init_control_points(wing);

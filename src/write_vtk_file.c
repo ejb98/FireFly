@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "mesh.h"
 #include "isempty.h"
@@ -20,7 +21,7 @@ void write_vtk_file(const Mesh *mesh, const char *file_name) {
         return;
     }
 
-    int num_rows = mesh->num_rows;
+    size_t num_rows = (size_t) mesh->num_rows;
     if (num_rows < 2) {
         fprintf(stderr, "write_to_vtk_file: mesh must have at least 2 rows");
         fclose(fp);
@@ -28,7 +29,7 @@ void write_vtk_file(const Mesh *mesh, const char *file_name) {
         return;
     }
 
-    int num_cols = mesh->num_cols;
+    size_t num_cols = (size_t) mesh->num_cols;
     if (num_cols < 2) {
         fprintf(stderr, "write_to_vtk_file: mesh must have at least 2 columns");
         fclose(fp);
@@ -36,34 +37,34 @@ void write_vtk_file(const Mesh *mesh, const char *file_name) {
         return;
     }
 
-    int i0, i1, i2, i3;
-    int num_quads = (num_rows - 1) * (num_cols - 1);
-    int num_points = num_rows * num_cols;
+    size_t i0, i1, i2, i3;
+    size_t num_quads = (num_rows - 1) * (num_cols - 1);
+    size_t num_points = num_rows * num_cols;
 
     fprintf(fp, "# vtk DataFile Version 3.0\n");
     fprintf(fp, "Mesh Surface\n");
     fprintf(fp, "ASCII\n");
     fprintf(fp, "DATASET UNSTRUCTURED_GRID\n");
-    fprintf(fp, "POINTS %d float\n", num_points);
+    fprintf(fp, "POINTS %zu float\n", num_points);
 
-    for (int i = 0; i < num_points; i++) {
+    for (size_t i = 0; i < num_points; i++) {
         fprintf(fp, "%f %f %f\n", mesh->x[i], mesh->y[i], mesh->z[i]);
     }
 
-    fprintf(fp, "CELLS %d %d\n", num_quads, 5 * num_quads);
-    for (int i = 0; i < num_rows - 1; i++) {
-        for (int j = 0; j < num_cols - 1; j++) {
-            i0 = sub2ind(i, j, num_cols);
-            i1 = sub2ind(i, j + 1, num_cols);
-            i2 = sub2ind(i + 1, j + 1, num_cols);
-            i3 = sub2ind(i + 1, j, num_cols);
+    fprintf(fp, "CELLS %zu %zu\n", num_quads, 5 * num_quads);
+    for (size_t i = 0; i < num_rows - 1; i++) {
+        for (size_t j = 0; j < num_cols - 1; j++) {
+            i0 = i * num_cols + j;
+            i1 = i * num_cols + j + 1;
+            i2 = (i + 1) * num_cols + j + 1;
+            i3 = (i + 1) * num_cols + j;
 
-            fprintf(fp, "4 %d %d %d %d\n", i0, i1, i2, i3);
+            fprintf(fp, "4 %zu %zu %zu %zu\n", i0, i1, i2, i3);
         }
     }
 
-    fprintf(fp, "CELL_TYPES %d\n", num_quads);
-    for (int i = 0; i < num_quads; i++) {
+    fprintf(fp, "CELL_TYPES %zu\n", num_quads);
+    for (size_t i = 0; i < num_quads; i++) {
         fprintf(fp, "9\n");
     }
 

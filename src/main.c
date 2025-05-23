@@ -10,17 +10,14 @@
 #include "print_firefly.h"
 #include "print_attributes.h"
 
-#define LOCKED_YAW 0.0
-#define LOCKED_ROLL 0.0
-#define LOCKED_Y_POS 0.0
 #define SAVE_VTK_FILES 1
 #define NUM_TIME_STEPS 160
-#define SWEEP_ANGLE_LEADING 70.0
-#define SWEEP_ANGLE_TRAILING 80.0
+#define SWEEP_ANGLE_LEADING 90.0
+#define SWEEP_ANGLE_TRAILING 90.0
 #define ANGLE_OF_ATTACK 5.0
-#define PITCHING_FREQUENCY 2.0
-#define PITCHING_AMPLITUDE 5.0
-#define HEAVING_FREQUENCY 2.0
+#define PITCHING_FREQUENCY 0.0
+#define PITCHING_AMPLITUDE 0.0
+#define HEAVING_FREQUENCY 0.0
 #define HEAVING_AMPLITUDE 0.0
 #define FAR_FIELD_VELOCITY 10.0
 #define NUM_CHORDWISE_PANELS 4
@@ -29,7 +26,7 @@
 #define AIR_DENSITY 1.0
 #define ROOT_CHORD 1.0
 #define SEMI_SPAN 4.0
-#define CUTOFF 0.0001
+#define CUTOFF 0.001
 #define NACA_M 6
 #define NACA_P 4
 #define PI 3.141592654
@@ -61,6 +58,7 @@ int main(int argc, char **argv) {
                      .cutoff = CUTOFF,
                      .wake_offset = dx_wake};
 
+    wing_obj.wake_offset = 0.1;
     if (init_wing(&wing_obj)) {
         fprintf(stderr, "main: init_wing failed to allocate all memory");
 
@@ -81,22 +79,19 @@ int main(int argc, char **argv) {
         t = i * dt;
 
         wing_obj.position.x = -FAR_FIELD_VELOCITY * t;
-        wing_obj.position.y = LOCKED_Y_POS;
+        wing_obj.position.y = 0.0;
         wing_obj.position.z = HEAVING_AMPLITUDE * sin(2.0 * PI * HEAVING_FREQUENCY * t);
-        wing_obj.rotation.x = LOCKED_ROLL;
+        wing_obj.rotation.x = 0.0;
         wing_obj.rotation.y = PITCHING_AMPLITUDE * sin(2.0 * PI * PITCHING_FREQUENCY * t) * PI / 180.0;
-        wing_obj.rotation.z = LOCKED_YAW;
+        wing_obj.rotation.z = 0.0;
 
         process(wing, dt);
-
-        // TODO: call rollup_wake(wing) function to assign vorticity and perturb the wake
+        printf("done\n");
 
         if (i && SAVE_VTK_FILES) {
             snprintf(file_name, sizeof(file_name), "wake_rings.vtk.%d", i);
             write_vtk_file(&wing_obj.wake_rings, file_name);
         }
-        
-        printf("done\n");
     }
 
     elapsed_time = ((double) (clock() - start)) / CLOCKS_PER_SEC;
