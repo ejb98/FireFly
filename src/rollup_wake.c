@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "wing.h"
 #include "mesh.h"
 #include "vector.h"

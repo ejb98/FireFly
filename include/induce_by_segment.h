@@ -3,6 +3,6 @@
 
 #include "vector.h"
 
-void induce_by_segment(Vector *point, Vector *point1, Vector *point2,
-                       Vector *velocity, double gamma, double cutoff);
+void induce_by_segment(Vector *point, Vector *point1, Vector *point2, Vector *velocity, double gamma, double cutoff);
+
 #endif
