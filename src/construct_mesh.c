@@ -2,20 +2,17 @@
 #include <stdlib.h>
 
 #include "mesh.h"
-#include "check_null.h"
+#include "arena.h"
+#include "arena_allocate.h"
 
-Mesh construct_mesh(int num_rows, int num_cols) {
-    size_t num_bytes = sizeof(double) * num_rows * num_cols;
+Mesh construct_mesh(int num_rows, int num_cols, Arena *arena) {
+    size_t num_elements = ((size_t) num_rows) * num_cols;
 
-    Mesh mesh = {.num_rows = num_rows,
-                 .num_cols = num_cols,
-                 .x = (double *) malloc(num_bytes),
-                 .y = (double *) malloc(num_bytes),
-                 .z = (double *) malloc(num_bytes)};
+    Mesh mesh = {num_rows, num_cols};
 
-    check_null("construct_mesh", "x", mesh.x);
-    check_null("construct_mesh", "y", mesh.y);
-    check_null("construct_mesh", "z", mesh.z);
+    mesh.x = arena_allocate(num_elements, arena);
+    mesh.y = arena_allocate(num_elements, arena);
+    mesh.z = arena_allocate(num_elements, arena);
 
     return mesh;
 }

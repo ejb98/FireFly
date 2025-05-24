@@ -2,6 +2,7 @@
 #define WING_H
 
 #include "mesh.h"
+#include "arena.h"
 #include "vector.h"
 
 typedef struct Wing {
@@ -45,6 +46,8 @@ typedef struct Wing {
     Vector rotation;
     Vector position_prev;
     Vector rotation_prev;
+
+    Arena memory;
 } Wing;
 
 #endif

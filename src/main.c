@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
     wing_obj.wake_offset = 0.1;
     if (init_wing(&wing_obj)) {
-        fprintf(stderr, "main: init_wing failed to allocate all memory");
+        fprintf(stderr, "main: init_wing failed to allocate memory");
 
         return 1;
     }
@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
     putchar('\n');
     print_attributes(wing);
     printf("Elapsed Time: %.3f sec\n", elapsed_time);
+    free(wing->memory.elements);
 
     return 0;
 }
