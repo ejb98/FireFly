@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
     putchar('\n');
     print_attributes(wing);
     printf("Elapsed Time: %.3f sec\n", elapsed_time);
+    free(wing->pivot_vector);
     free(wing->memory.elements);
 
     return 0;
