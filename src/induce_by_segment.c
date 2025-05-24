@@ -1,7 +1,5 @@
 #include <math.h>
 
-#include "dot.h"
-#include "cross.h"
 #include "vector.h"
 
 #define FOUR_PI 12.566370614

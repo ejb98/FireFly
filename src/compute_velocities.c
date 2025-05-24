@@ -1,4 +1,5 @@
-#include "dot.h"
+#include <stdlib.h>
+
 #include "wing.h"
 #include "vector.h"
 #include "sub2ind.h"
@@ -7,7 +8,7 @@
 #include "assign_rotation.h"
 
 void compute_velocities(Wing *wing, double delta_time) {
-    int ipoint;
+    size_t ipoint;
 
     double rot_mat[3][3];
     double rot_mat_prev[3][3];
@@ -49,7 +50,9 @@ void compute_velocities(Wing *wing, double delta_time) {
             velocity.y = (curr.y - prev.y) / delta_time;
             velocity.z = (curr.z - prev.z) / delta_time;
 
-            wing->normal_velocities[ipoint] = dot(&velocity, &normal);
+            wing->normal_velocities[ipoint] = velocity.x * normal.x + 
+                                              velocity.y * normal.y + 
+                                              velocity.z + normal.z;
         }
     }
 }

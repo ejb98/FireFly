@@ -26,7 +26,7 @@
 #define AIR_DENSITY 1.0
 #define ROOT_CHORD 1.0
 #define SEMI_SPAN 4.0
-#define CUTOFF 0.001
+#define CUTOFF 1e-6
 #define NACA_M 6
 #define NACA_P 4
 #define PI 3.141592654
@@ -58,7 +58,6 @@ int main(int argc, char **argv) {
                      .cutoff = CUTOFF,
                      .wake_offset = dx_wake};
 
-    wing_obj.wake_offset = 0.1;
     if (init_wing(&wing_obj)) {
         fprintf(stderr, "main: init_wing failed to allocate memory");
 

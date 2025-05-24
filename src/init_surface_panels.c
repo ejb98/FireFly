@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <math.h>
 
 #include "wing.h"
@@ -6,7 +7,7 @@
 #include "assign_rotation.h"
 
 void init_surface_panels(Wing *wing) {
-    int index;
+    size_t index;
 
     const double pi = 3.141592654;
 

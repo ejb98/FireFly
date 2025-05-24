@@ -9,15 +9,16 @@
 #include "induce_by_ring.h"
 
 void rollup_wake(Wing *wing, double delta_time) {
-    int iring;
-    int i0, i1, i2, i3;
-    int rollup_y;
-    int num_points = get_size(&wing->wake_rings);
-    int num_points_trunc = wing->num_wake_deforming_rows * wing->wake_rings.num_cols;
+    size_t iring;
+    size_t i0, i1, i2, i3;
+    size_t num_points = get_size(&wing->wake_rings);
+    // size_t num_points_trunc = ((size_t) wing->num_wake_deforming_rows) * wing->wake_rings.num_cols;
 
-    if (num_points > num_points_trunc) {
-        num_points = num_points_trunc;
-    }
+    // if (num_points > num_points_trunc) {
+    //     num_points = num_points_trunc;
+    // }
+
+    int rollup_y;
 
     Vector point;
     Vector v_induced;
@@ -35,7 +36,7 @@ void rollup_wake(Wing *wing, double delta_time) {
         rings = ring_meshes[imesh];
 
         for (int mirror = 0; mirror < 2; mirror++) {
-            for (int ipoint = 0; ipoint < num_points; ipoint++) {
+            for (size_t ipoint = 0; ipoint < num_points; ipoint++) {
                 rollup_y = ipoint % points->num_cols;
 
                 mesh_to_vector(points, ipoint, &point);
@@ -73,7 +74,7 @@ void rollup_wake(Wing *wing, double delta_time) {
         }
     }
 
-    for (int ipoint = 0; ipoint < num_points; ipoint++) {
+    for (size_t ipoint = 0; ipoint < num_points; ipoint++) {
         points->x[ipoint] += displacements->x[ipoint];
         points->y[ipoint] += displacements->y[ipoint];
         points->z[ipoint] += displacements->z[ipoint];

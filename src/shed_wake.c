@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "wing.h"
 #include "sub2ind.h"
 #include "get_size.h"
@@ -9,19 +11,19 @@ void shed_wake(Wing *wing) {
 
     double rot_mat[3][3];
 
-    int iwing;
-    int iring;
-    int iwake;
-    int icurr;
-    int iprev;
-    int num_points;
+    size_t iwing;
+    size_t iring;
+    size_t iwake;
+    size_t icurr;
+    size_t iprev;
+    size_t num_points;
 
     if (wing->iteration) {
         num_points = get_size(&wing->wake_rings);
 
         assign_rotation(rot_mat, &wing->rotation_prev);
 
-        for (int i = 0; i < num_points; i++) {
+        for (size_t i = 0; i < num_points; i++) {
             point.x = wing->wake_rings.x[i];
             point.y = wing->wake_rings.y[i];
             point.z = wing->wake_rings.z[i];
@@ -76,7 +78,7 @@ void shed_wake(Wing *wing) {
 
     assign_rotation(rot_mat, &rotation_negative);
 
-    for (int i = 0; i < num_points; i++) {
+    for (size_t i = 0; i < num_points; i++) {
         point.x = wing->wake_rings.x[i] - wing->position.x;
         point.y = wing->wake_rings.y[i] - wing->position.y;
         point.z = wing->wake_rings.z[i] - wing->position.z;

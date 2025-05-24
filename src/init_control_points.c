@@ -1,8 +1,7 @@
+#include <stdlib.h>
 #include <math.h>
 
-#include "dot.h"
 #include "wing.h"
-#include "cross.h"
 #include "vector.h"
 #include "sub2ind.h"
 
@@ -17,7 +16,7 @@ void init_control_points(Wing *wing) {
     double dz_right;
     double magnitude;
 
-    int i0, i1, i2, i3, ip;
+    size_t i0, i1, i2, i3, ip;
 
     for (int i = 0; i < wing->control_points.num_rows; i++) {
         for (int j = 0; j < wing->control_points.num_cols; j++) {
@@ -53,9 +52,11 @@ void init_control_points(Wing *wing) {
             b.y = wing->surface_panels.y[i1] - wing->surface_panels.y[i3];
             b.z = wing->surface_panels.z[i1] - wing->surface_panels.z[i3];
 
-            cross(&a, &b, &c);
+            c.x = a.y * b.z - a.z * b.y;
+            c.y = a.z * b.x - a.x * b.z;
+            c.z = a.x * b.y - a.y * b.x;
 
-            magnitude = sqrt(dot(&c, &c));
+            magnitude = sqrt(c.x * c.x + c.y * c.y + c.z * c.z);
 
             wing->normal_vectors.x[ip] = c.x / magnitude;
             wing->normal_vectors.y[ip] = c.y / magnitude;

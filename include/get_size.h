@@ -1,8 +1,10 @@
 #ifndef GET_SIZE_H
 #define GET_SIZE_H
 
+#include <stdlib.h>
+
 #include "mesh.h"
 
-int get_size(const Mesh* mesh);
+size_t get_size(const Mesh* mesh);
 
 #endif

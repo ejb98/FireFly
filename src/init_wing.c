@@ -4,8 +4,6 @@
 #include "wing.h"
 #include "arena.h"
 #include "vector.h"
-#include "isempty.h"
-#include "check_null.h"
 #include "construct_mesh.h"
 #include "arena_allocate.h"
 #include "init_bound_rings.h"

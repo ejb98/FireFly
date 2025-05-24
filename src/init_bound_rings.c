@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "wing.h"
 #include "sub2ind.h"
 
@@ -5,8 +7,8 @@ void init_bound_rings(Wing *wing) {
     double dx;
     double dz;
 
-    int index_curr;
-    int index_next;
+    size_t index_curr;
+    size_t index_next;
 
     for (int j = 0; j < wing->bound_rings.num_cols; j++) {
         for (int i = 0; i < wing->bound_rings.num_rows - 1; i++) {

@@ -2,8 +2,8 @@
 #define COMPUTE_COEFFICIENTS_H
 
 #include "mesh.h"
+#include "geometry.h"
 
-void compute_coefficients(Mesh *points, Mesh *normals, Mesh *rings,
-                          double *a, double *b, double cutoff);
+void compute_coefficients(Wing *wing, Geometry inducing_rings);
 
 #endif

@@ -1,5 +1,7 @@
+#include <stdlib.h>
+
 #include "mesh.h"
 
-int get_size(const Mesh* mesh) {
-    return mesh->num_rows * mesh->num_cols;
+size_t get_size(const Mesh* mesh) {
+    return ((size_t) mesh->num_rows) * mesh->num_cols;
 }
