@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "arena.h"
 
@@ -9,6 +10,6 @@ double *arena_allocate(size_t num_elements, Arena *arena) {
     double *ptr = arena->elements + arena->next_free_index;
 
     arena->next_free_index += num_elements;
-
+    
     return ptr;
 }

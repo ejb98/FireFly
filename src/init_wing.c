@@ -24,9 +24,9 @@ int init_wing(Wing *wing) {
     size_t nc = num_cols;
     size_t ncp1 = nc + 1;
     size_t nt = num_step;
-    size_t ntp1 = nt + 1;
-    size_t np = nrp1 * ncp1 * 6 + nr * nc * 6 + nt * ncp1 * 6 + 
-                ntp1 * nc + nr * nc * (3 + 2 * nr * nc + 2 * ntp1 * nc);
+    size_t ntm1 = nt - 1;
+    size_t nrnc = nr * nc;
+    size_t np = 6 * (nrnc + ncp1 * (nt + nrp1)) + ntm1 * nc + nrnc * (3 + 2 * nc * (nr + ntm1));
 
     wing->memory.num_elements = np;
     wing->memory.next_free_index = 0;
