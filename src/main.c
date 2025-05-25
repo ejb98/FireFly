@@ -39,7 +39,6 @@ int main(int argc, char **argv) {
     clock_t current;
 
     start = clock();
-    last = start;
 
     double t;
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
@@ -75,6 +74,8 @@ int main(int argc, char **argv) {
         write_vtk_file(&wing_obj.bound_rings, "bound_rings.vtk");
         write_vtk_file(&wing_obj.control_points, "control_points.vtk");
     }
+
+    last = clock();
 
     for (int i = 0; i < NUM_TIME_STEPS; i++) {
         printf("Solving Step %d...", i);

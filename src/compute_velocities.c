@@ -16,6 +16,7 @@ void compute_velocities(Wing *wing, double delta_time) {
     Vector curr;
     Vector prev;
     Vector normal;
+    Vector tangent;
     Vector velocity;
 
     assign_rotation(rot_mat, &wing->rotation);
@@ -45,6 +46,7 @@ void compute_velocities(Wing *wing, double delta_time) {
             prev.z += wing->position_prev.z;
             
             mesh_to_vector(&wing->normal_vectors, ipoint, &normal);
+            mesh_to_vector(&wing->tangent_vectors, ipoint, &tangent);
 
             velocity.x = (curr.x - prev.x) / delta_time;
             velocity.y = (curr.y - prev.y) / delta_time;
@@ -52,7 +54,11 @@ void compute_velocities(Wing *wing, double delta_time) {
 
             wing->normal_velocities[ipoint] = velocity.x * normal.x + 
                                               velocity.y * normal.y + 
-                                              velocity.z + normal.z;
+                                              velocity.z * normal.z;
+            
+            wing->freestream_velocities[ipoint] = velocity.x * tangent.x + 
+                                                  velocity.y * tangent.y + 
+                                                  velocity.z * tangent.z;
         }
     }
 }

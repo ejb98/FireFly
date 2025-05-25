@@ -28,6 +28,7 @@ typedef struct Wing {
 
     double *wake_vorticity;
     double *bound_vorticity;
+    double *freestream_velocities;
     double *normal_velocities;
     double *b_wing_on_wing;
     double *b_wake_on_wing;
@@ -35,6 +36,7 @@ typedef struct Wing {
     double *a_wake_on_wing;
     double *right_hand_side;
 
+    Mesh tangent_vectors;
     Mesh normal_vectors;
     Mesh surface_panels;
     Mesh control_points;

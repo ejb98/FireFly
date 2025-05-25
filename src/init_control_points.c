@@ -4,63 +4,81 @@
 #include "wing.h"
 #include "vector.h"
 #include "sub2ind.h"
+#include "mesh_to_vector.h"
 
 void init_control_points(Wing *wing) {
+    Vector a, b;
     Vector left;
+    Vector back;
     Vector right;
-    Vector a, b, c;
+    Vector front;
+    Vector normal;
+    Vector tangent;
+    Vector corners[4];
 
-    double dx_left;
-    double dz_left;
-    double dx_right;
-    double dz_right;
+    Mesh *points = &wing->surface_panels;
+
+    int num_cols = points->num_cols;
     double magnitude;
-
-    size_t i0, i1, i2, i3, ip;
+    
+    size_t ipoint;
 
     for (int i = 0; i < wing->control_points.num_rows; i++) {
         for (int j = 0; j < wing->control_points.num_cols; j++) {
-            ip = sub2ind(i, j, wing->control_points.num_cols);
-            i0 = sub2ind(i, j, wing->surface_panels.num_cols);
-            i1 = sub2ind(i, j + 1, wing->surface_panels.num_cols);
-            i2 = sub2ind(i + 1, j + 1, wing->surface_panels.num_cols);
-            i3 = sub2ind(i + 1, j, wing->surface_panels.num_cols);
+            ipoint = sub2ind(i, j, wing->control_points.num_cols);
 
-            dx_left = wing->surface_panels.x[i3] - wing->surface_panels.x[i0];
-            dz_left = wing->surface_panels.z[i3] - wing->surface_panels.z[i0];
+            mesh_to_vector(points, sub2ind(i, j, num_cols), corners);
+            mesh_to_vector(points, sub2ind(i, j + 1, num_cols), corners + 1);
+            mesh_to_vector(points, sub2ind(i + 1, j + 1, num_cols), corners + 2);
+            mesh_to_vector(points, sub2ind(i + 1, j, num_cols), corners + 3);
 
-            dx_right = wing->surface_panels.x[i2] - wing->surface_panels.x[i1];
-            dz_right = wing->surface_panels.z[i2] - wing->surface_panels.z[i1];
+            left.y = corners[0].y;
+            left.x = corners[0].x + 0.75 * (corners[3].x - corners[0].x);
+            left.z = corners[0].z + 0.75 * (corners[3].z - corners[0].z);
 
-            left.y = wing->surface_panels.y[i0];
-            left.x = wing->surface_panels.x[i0] + 0.75 * dx_left;
-            left.z = wing->surface_panels.z[i0] + 0.75 * dz_left;
+            right.y = corners[1].y;
+            right.x = corners[1].x + 0.75 * (corners[2].x - corners[1].x);
+            right.z = corners[1].z + 0.75 * (corners[2].z - corners[1].z);
 
-            right.y = wing->surface_panels.y[i1];
-            right.x = wing->surface_panels.x[i1] + 0.75 * dx_right;
-            right.z = wing->surface_panels.z[i1] + 0.75 * dz_right;
+            back.x = (corners[3].x + corners[2].x) / 2.0;
+            back.y = (corners[3].y + corners[2].y) / 2.0;
+            back.z = (corners[3].z + corners[2].z) / 2.0;
 
-            wing->control_points.x[ip] = (left.x + right.x) / 2.0;
-            wing->control_points.y[ip] = (left.y + right.y) / 2.0;
-            wing->control_points.z[ip] = (left.z + right.z) / 2.0;
+            front.x = (corners[0].x + corners[1].x) / 2.0;
+            front.y = (corners[0].y + corners[1].y) / 2.0;
+            front.z = (corners[0].z + corners[1].z) / 2.0;
 
-            a.x = wing->surface_panels.x[i2] - wing->surface_panels.x[i0];
-            a.y = wing->surface_panels.y[i2] - wing->surface_panels.y[i0];
-            a.z = wing->surface_panels.z[i2] - wing->surface_panels.z[i0];
+            wing->control_points.x[ipoint] = (left.x + right.x) / 2.0;
+            wing->control_points.y[ipoint] = (left.y + right.y) / 2.0;
+            wing->control_points.z[ipoint] = (left.z + right.z) / 2.0;
 
-            b.x = wing->surface_panels.x[i1] - wing->surface_panels.x[i3];
-            b.y = wing->surface_panels.y[i1] - wing->surface_panels.y[i3];
-            b.z = wing->surface_panels.z[i1] - wing->surface_panels.z[i3];
+            a.x = corners[2].x - corners[0].x;
+            a.y = corners[2].y - corners[0].y;
+            a.z = corners[2].z - corners[0].z;
 
-            c.x = a.y * b.z - a.z * b.y;
-            c.y = a.z * b.x - a.x * b.z;
-            c.z = a.x * b.y - a.y * b.x;
+            b.x = corners[1].x - corners[3].x;
+            b.y = corners[1].y - corners[3].y;
+            b.z = corners[1].z - corners[3].z;
 
-            magnitude = sqrt(c.x * c.x + c.y * c.y + c.z * c.z);
+            normal.x = a.y * b.z - a.z * b.y;
+            normal.y = a.z * b.x - a.x * b.z;
+            normal.z = a.x * b.y - a.y * b.x;
 
-            wing->normal_vectors.x[ip] = c.x / magnitude;
-            wing->normal_vectors.y[ip] = c.y / magnitude;
-            wing->normal_vectors.z[ip] = c.z / magnitude;
+            magnitude = sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+
+            wing->normal_vectors.x[ipoint] = normal.x / magnitude;
+            wing->normal_vectors.y[ipoint] = normal.y / magnitude;
+            wing->normal_vectors.z[ipoint] = normal.z / magnitude;
+
+            tangent.x = front.x - back.x;
+            tangent.y = front.y - back.y;
+            tangent.z = front.z - back.z;
+
+            magnitude = sqrt(tangent.x * tangent.x + tangent.y * tangent.y + tangent.z * tangent.z);
+
+            wing->tangent_vectors.x[ipoint] = tangent.x / magnitude;
+            wing->tangent_vectors.y[ipoint] = tangent.y / magnitude;
+            wing->tangent_vectors.z[ipoint] = tangent.z / magnitude;
         }
     }
 }
