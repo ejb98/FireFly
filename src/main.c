@@ -34,7 +34,12 @@
 int main(int argc, char **argv) {
     print_firefly();
 
-    clock_t start = clock();
+    clock_t last;
+    clock_t start;
+    clock_t current;
+
+    start = clock();
+    last = start;
 
     double t;
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
@@ -90,11 +95,16 @@ int main(int argc, char **argv) {
             write_vtk_file(&wing_obj.wake_rings, file_name);
         }
 
-        printf("done\tElapsed time: %.2f sec\n", ((double) (clock() - start)) / CLOCKS_PER_SEC);
+        current = clock();
+
+        printf("completed in %.2f sec\n", ((double) (current - last)) / CLOCKS_PER_SEC);
+
+        last = current;
     }
 
     putchar('\n');
     print_attributes(wing);
+    printf("Elapsed Time: %.2f sec\n", ((double) (current - start)) / CLOCKS_PER_SEC);
 
     free(wing->horizontal_buffer);
     free(wing->pivot_vector);
