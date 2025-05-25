@@ -4,13 +4,11 @@
 #include <time.h>
 
 #include "wing.h"
-#include "vector.h"
 #include "process.h"
 #include "init_wing.h"
 #include "write_vtk_file.h"
 #include "print_firefly.h"
 #include "print_attributes.h"
-#include "induce_by_segment.h"
 
 #define SAVE_VTK_FILES 1
 #define NUM_TIME_STEPS 160
