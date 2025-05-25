@@ -8,15 +8,10 @@ void induce_velocities(Vector *point, Mesh *rings, int i, int j, Vector *vertica
                        Vector *horizontal_buffer, Vector *velocities, double cutoff) {
     Vector corners[4];
 
-    size_t i0 = sub2ind(i, j, rings->num_cols);
-    size_t i1 = sub2ind(i, j + 1, rings->num_cols);
-    size_t i2 = sub2ind(i + 1, j + 1, rings->num_cols);
-    size_t i3 = sub2ind(i + 1, j, rings->num_cols);
-
-    mesh_to_vector(rings, i0, corners);
-    mesh_to_vector(rings, i1, corners + 1);
-    mesh_to_vector(rings, i2, corners + 2);
-    mesh_to_vector(rings, i3, corners + 3);
+    mesh_to_vector(rings, sub2ind(i, j, rings->num_cols), corners);
+    mesh_to_vector(rings, sub2ind(i, j + 1, rings->num_cols), corners + 1);
+    mesh_to_vector(rings, sub2ind(i + 1, j + 1, rings->num_cols), corners + 2);
+    mesh_to_vector(rings, sub2ind(i + 1, j, rings->num_cols), corners + 3);
 
     if (i > 0) {
         velocities[0].x = -horizontal_buffer[j].x;
