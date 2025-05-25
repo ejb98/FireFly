@@ -43,7 +43,7 @@ int init_wing(Wing *wing) {
     wing->normal_vectors = construct_mesh(num_rows, num_cols, arena);
     wing->bound_rings = construct_mesh(num_rows + 1, num_cols + 1, arena);
     wing->wake_rings = construct_mesh(num_step, num_cols + 1, arena);
-    wing->wake_displacements = construct_mesh(num_step, num_cols + 1, arena);    
+    wing->wake_displacements = construct_mesh(num_step, num_cols + 1, arena);
     wing->wake_vorticity = arena_allocate((nt - 1) * nc, arena);
     wing->bound_vorticity = arena_allocate(nr * nc, arena);
     wing->normal_velocities = arena_allocate(nr * nc, arena);
@@ -53,9 +53,16 @@ int init_wing(Wing *wing) {
     wing->a_wake_on_wing = arena_allocate(nr * nc * (nt - 1) * nc, arena);
     wing->b_wake_on_wing = arena_allocate(nr * nc * (nt - 1) * nc, arena);
     wing->pivot_vector = (int *) calloc(nr * nc, sizeof(int));
+    wing->horizontal_buffer = (Vector *) calloc(nc, sizeof(Vector));
     
     if (wing->pivot_vector == NULL) {
         fprintf(stderr, "init_wing: failed to allocate pivot vector of length %zu", nr * nc);
+
+        return 1;
+    }
+
+    if (wing->horizontal_buffer == NULL) {
+        fprintf(stderr, "init_wing: failed to allocate horizontal_buffer of length %zu", nc);
 
         return 1;
     }

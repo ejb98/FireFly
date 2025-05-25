@@ -47,6 +47,8 @@ typedef struct Wing {
     Vector position_prev;
     Vector rotation_prev;
 
+    Vector *horizontal_buffer;
+
     Arena memory;
 } Wing;
 
