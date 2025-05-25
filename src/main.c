@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 
         current = clock();
 
-        printf("completed in %.2f sec\n", ((double) (current - last)) / CLOCKS_PER_SEC);
+        printf("completed in %.0f msec\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
 
         last = current;
     }
