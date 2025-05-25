@@ -12,13 +12,13 @@
 
 #define SAVE_VTK_FILES 1
 #define NUM_TIME_STEPS 160
-#define SWEEP_ANGLE_LEADING 90.0
-#define SWEEP_ANGLE_TRAILING 90.0
+#define SWEEP_ANGLE_LEADING 70.0
+#define SWEEP_ANGLE_TRAILING 80.0
 #define ANGLE_OF_ATTACK 5.0
-#define PITCHING_FREQUENCY 0.0
-#define PITCHING_AMPLITUDE 0.0
-#define HEAVING_FREQUENCY 0.0
-#define HEAVING_AMPLITUDE 0.0
+#define PITCHING_FREQUENCY 2.0
+#define PITCHING_AMPLITUDE 2.5
+#define HEAVING_FREQUENCY 2.0
+#define HEAVING_AMPLITUDE 0.5
 #define FAR_FIELD_VELOCITY 10.0
 #define NUM_CHORDWISE_PANELS 4
 #define NUM_SPANWISE_PANELS 13
@@ -40,7 +40,6 @@ int main(int argc, char **argv) {
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
     double dt = dx / FAR_FIELD_VELOCITY / 4.0;
     double dx_wake = 0.3 * FAR_FIELD_VELOCITY * dt;
-    double elapsed_time;
 
     char file_name[50];
 
@@ -85,19 +84,17 @@ int main(int argc, char **argv) {
         wing_obj.rotation.z = 0.0;
 
         process(wing, dt);
-        printf("done\n");
 
         if (i && SAVE_VTK_FILES) {
             snprintf(file_name, sizeof(file_name), "wake_rings.vtk.%d", i);
             write_vtk_file(&wing_obj.wake_rings, file_name);
         }
-    }
 
-    elapsed_time = ((double) (clock() - start)) / CLOCKS_PER_SEC;
+        printf("done\tElapsed time: %.2f sec\n", ((double) (clock() - start)) / CLOCKS_PER_SEC);
+    }
 
     putchar('\n');
     print_attributes(wing);
-    printf("Elapsed Time: %.3f sec\n", elapsed_time);
 
     free(wing->horizontal_buffer);
     free(wing->pivot_vector);
