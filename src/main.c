@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
                                     gammas[sub2ind(ichord - 1, j, mesh->num_cols)];
                         }
                         
-                        assign_corners(mesh, i, j, corners_local);
+                        assign_corners(mesh, ichord, j, corners_local);
 
                         dx_left = corners_local[3].x - corners_local[0].x;
                         dx_right = corners_local[2].x - corners_local[1].x;
@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
                     delta_pressure = AIR_DENSITY * (wing->freestream_velocities[ipanel] * gamma_chordwise / mean_chord +
                                                     wing->spanwise_velocities[ipanel] * gamma_spanwise / width + dgammadt);
                     
-                    lift -= delta_pressure * area * normal.x;
+                    lift += delta_pressure * area * normal.x;
 
                     wing->bound_vorticity_prev[ipanel] = dgammadx;
                 }
