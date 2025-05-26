@@ -4,21 +4,28 @@
 #include <time.h>
 
 #include "wing.h"
+#include "vector.h"
 #include "process.h"
+#include "sub2ind.h"
+#include "get_size.h"
 #include "init_wing.h"
+#include "mesh_to_vector.h"
 #include "write_vtk_file.h"
 #include "print_firefly.h"
 #include "print_attributes.h"
+#include "compute_area.h"
 
+#define NEWTON_TO_POUND 0.224809
+#define PASCAL_TO_PSI 0.000145038
 #define SAVE_VTK_FILES 1
 #define NUM_TIME_STEPS 160
 #define SWEEP_ANGLE_LEADING 70.0
 #define SWEEP_ANGLE_TRAILING 80.0
 #define ANGLE_OF_ATTACK 5.0
 #define PITCHING_FREQUENCY 2.0
-#define PITCHING_AMPLITUDE 2.5
+#define PITCHING_AMPLITUDE 0.0
 #define HEAVING_FREQUENCY 2.0
-#define HEAVING_AMPLITUDE 0.5
+#define HEAVING_AMPLITUDE 0.0
 #define FAR_FIELD_VELOCITY 10.0
 #define NUM_CHORDWISE_PANELS 4
 #define NUM_SPANWISE_PANELS 13
@@ -77,10 +84,10 @@ int main(int argc, char **argv) {
 
     last = clock();
 
-    for (int i = 0; i < NUM_TIME_STEPS; i++) {
-        printf("Solving Step %d...", i);
+    for (int istep = 0; istep < NUM_TIME_STEPS; istep++) {
+        printf("Solving Step %d...", istep);
 
-        t = i * dt;
+        t = istep * dt;
 
         wing_obj.position.x = -FAR_FIELD_VELOCITY * t;
         wing_obj.position.y = 0.0;
@@ -91,14 +98,57 @@ int main(int argc, char **argv) {
 
         process(wing, dt);
 
-        if (i && SAVE_VTK_FILES) {
-            snprintf(file_name, sizeof(file_name), "wake_rings.vtk.%d", i);
+        // double width;
+        // double w_induced;
+        // double chord_left;
+        // double chord_right;
+        // double chord_average;
+        // double lift_delta;
+        // double drag_delta;
+        // double panel_area;
+        // double pressure_delta;
+        // double vorticity_strength;
+
+        // size_t ipanel;
+        // size_t ipanel_prev;
+        // size_t num_points = get_size(&wing_obj.control_points);
+
+        // Mesh *mesh = &wing_obj.surface_panels;
+
+        // int num_cols = mesh->num_cols;
+
+        // Vector left_vector;
+        // Vector right_vector;
+        // Vector width_vector;
+        // Vector corners[4];
+
+        // double lift_total = 0.0;
+        // double drag_total = 0.0;
+        // double pressure_total = 0.0;
+
+        // for (int i = 0; i < wing_obj.num_chordwise_panels; i++) {
+        //     for (int j = 0; j < wing_obj.num_spanwise_panels; j++) {
+        //         ipanel = sub2ind(i, j, wing_obj.num_spanwise_panels);
+
+        //         mesh_to_vector(mesh, sub2ind(i, j, num_cols), corners);
+        //         mesh_to_vector(mesh, sub2ind(i, j + 1, num_cols), corners);
+        //         mesh_to_vector(mesh, sub2ind(i + 1, j + 1, num_cols), corners);
+        //         mesh_to_vector(mesh, sub2ind(i + 1, j, num_cols), corners);
+
+        //         panel_area = compute_area(corners);
+        //     }
+        // }
+
+        if (istep && SAVE_VTK_FILES) {
+            snprintf(file_name, sizeof(file_name), "wake_rings.vtk.%d", istep);
             write_vtk_file(&wing_obj.wake_rings, file_name);
         }
 
         current = clock();
 
         printf("completed in %.0f msec\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
+        // printf("Lift = %f lbf, Induced Drag = %f lbf, Pressure = %f psi\n",
+        //        lift_total, drag_total, pressure_total);
 
         last = current;
     }

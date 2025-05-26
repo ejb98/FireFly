@@ -1,8 +1,12 @@
 #include <stdlib.h>
 
+#include "add.h"
+#include "dot.h"
 #include "wing.h"
 #include "vector.h"
+#include "divide.h"
 #include "sub2ind.h"
+#include "subtract.h"
 #include "mesh_to_vector.h"
 #include "apply_rotation.h"
 #include "assign_rotation.h"
@@ -16,7 +20,8 @@ void compute_velocities(Wing *wing, double delta_time) {
     Vector curr;
     Vector prev;
     Vector normal;
-    Vector tangent;
+    Vector tangent_chordwise;
+    Vector tangent_spanwise;
     Vector velocity;
 
     assign_rotation(rot_mat, &wing->rotation);
@@ -26,9 +31,7 @@ void compute_velocities(Wing *wing, double delta_time) {
         for (int i = 0; i < wing->num_chordwise_panels; i++) {
             ipoint = sub2ind(i, j, wing->num_spanwise_panels);
 
-            curr.x = wing->control_points.x[ipoint];
-            curr.y = wing->control_points.y[ipoint];
-            curr.z = wing->control_points.z[ipoint];
+            mesh_to_vector(&wing->control_points, ipoint, &curr);
 
             prev.x = curr.x;
             prev.y = curr.y;
@@ -36,29 +39,19 @@ void compute_velocities(Wing *wing, double delta_time) {
 
             apply_rotation(rot_mat, &curr);
             apply_rotation(rot_mat_prev, &prev);
-
-            curr.x += wing->position.x;
-            curr.y += wing->position.y;
-            curr.z += wing->position.z;
-
-            prev.x += wing->position_prev.x;
-            prev.y += wing->position_prev.y;
-            prev.z += wing->position_prev.z;
+            add(&curr, &wing->position, &curr);
+            add(&prev, &wing->position_prev, &prev);
             
             mesh_to_vector(&wing->normal_vectors, ipoint, &normal);
-            mesh_to_vector(&wing->tangent_vectors, ipoint, &tangent);
+            mesh_to_vector(&wing->tangent_vectors_chordwise, ipoint, &tangent_chordwise);
+            mesh_to_vector(&wing->tangent_vectors_spanwise, ipoint, &tangent_spanwise);
 
-            velocity.x = (curr.x - prev.x) / delta_time;
-            velocity.y = (curr.y - prev.y) / delta_time;
-            velocity.z = (curr.z - prev.z) / delta_time;
+            subtract(&curr, &prev, &velocity);
+            divide(&velocity, delta_time);
 
-            wing->normal_velocities[ipoint] = velocity.x * normal.x + 
-                                              velocity.y * normal.y + 
-                                              velocity.z * normal.z;
-            
-            wing->freestream_velocities[ipoint] = velocity.x * tangent.x + 
-                                                  velocity.y * tangent.y + 
-                                                  velocity.z * tangent.z;
+            wing->normal_velocities[ipoint] = dot(&velocity, &normal);
+            wing->freestream_velocities[ipoint] = dot(&velocity, &tangent_chordwise);
+            wing->spanwise_velocities[ipoint] = dot(&velocity, &tangent_spanwise);
         }
     }
 }
