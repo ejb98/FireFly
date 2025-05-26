@@ -4,6 +4,8 @@
 #include <time.h>
 
 #include "wing.h"
+#include "subtract.h"
+#include "compute_magnitude.h"
 #include "vector.h"
 #include "process.h"
 #include "sub2ind.h"
@@ -13,7 +15,10 @@
 #include "write_vtk_file.h"
 #include "print_firefly.h"
 #include "print_attributes.h"
+#include "compute_mean_chord.h"
+#include "compute_between.h"
 #include "compute_area.h"
+#include "assign_corners.h"
 
 #define NEWTON_TO_POUND 0.224809
 #define PASCAL_TO_PSI 0.000145038
@@ -51,6 +56,7 @@ int main(int argc, char **argv) {
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
     double dt = dx / FAR_FIELD_VELOCITY / 4.0;
     double dx_wake = 0.3 * FAR_FIELD_VELOCITY * dt;
+    double lift;
 
     char file_name[50];
 
@@ -98,46 +104,86 @@ int main(int argc, char **argv) {
 
         process(wing, dt);
 
-        // double width;
-        // double w_induced;
-        // double chord_left;
-        // double chord_right;
-        // double chord_average;
-        // double lift_delta;
-        // double drag_delta;
-        // double panel_area;
-        // double pressure_delta;
-        // double vorticity_strength;
+        lift = 0.0;
 
-        // size_t ipanel;
-        // size_t ipanel_prev;
-        // size_t num_points = get_size(&wing_obj.control_points);
+        if (istep) {
+            Mesh *mesh = &wing->surface_panels;
+            Vector corners[4];
+            Vector corners_local[4];
+            Vector normal;
+            Vector front;
+            double mean_chord;
+            double width;
+            double area;
+            double gamma;
+            double gamma_chordwise;
+            double gamma_spanwise;
+            double dgammadt;
+            double dgammadx;
+            double dx_left;
+            double dx_right;
+            double dx_mean;
+            double delta_pressure;
+            double *gammas = wing->bound_vorticity;
+            size_t ipanel;
 
-        // Mesh *mesh = &wing_obj.surface_panels;
+            for (int j = 0; j < wing_obj.num_spanwise_panels; j++) {
+                for (int i = 0; i < wing_obj.num_chordwise_panels; i++) {
+                    ipanel = sub2ind(i, j, wing_obj.num_spanwise_panels);
+                    assign_corners(mesh, i, j, corners);
+                    area = compute_area(corners);
+                    mean_chord = compute_mean_chord(corners);
+                    subtract(corners + 1, corners, &front);
+                    width = compute_magnitude(&front);
+                    mesh_to_vector(&wing->normal_vectors, ipanel, &normal);
 
-        // int num_cols = mesh->num_cols;
+                    dgammadx = 0.0;
+                    for (int ichord = 0; ichord <= i; ichord++) {
 
-        // Vector left_vector;
-        // Vector right_vector;
-        // Vector width_vector;
-        // Vector corners[4];
+                        if (!ichord) {
+                            gamma = gammas[sub2ind(ichord, j, mesh->num_cols)];
+                        } else {
+                            gamma = gammas[sub2ind(ichord, j, mesh->num_cols)] - 
+                                    gammas[sub2ind(ichord - 1, j, mesh->num_cols)];
+                        }
+                        
+                        assign_corners(mesh, i, j, corners_local);
 
-        // double lift_total = 0.0;
-        // double drag_total = 0.0;
-        // double pressure_total = 0.0;
+                        dx_left = corners_local[3].x - corners_local[0].x;
+                        dx_right = corners_local[2].x - corners_local[1].x;
 
-        // for (int i = 0; i < wing_obj.num_chordwise_panels; i++) {
-        //     for (int j = 0; j < wing_obj.num_spanwise_panels; j++) {
-        //         ipanel = sub2ind(i, j, wing_obj.num_spanwise_panels);
+                        dx_mean = (dx_left + dx_right) / 2.0;
 
-        //         mesh_to_vector(mesh, sub2ind(i, j, num_cols), corners);
-        //         mesh_to_vector(mesh, sub2ind(i, j + 1, num_cols), corners);
-        //         mesh_to_vector(mesh, sub2ind(i + 1, j + 1, num_cols), corners);
-        //         mesh_to_vector(mesh, sub2ind(i + 1, j, num_cols), corners);
+                        if (!ichord) {
+                            dgammadx += 0.5 * gamma * dx_mean;
+                        } else {
+                            dgammadx += (0.5 * gamma + gammas[sub2ind(ichord - 1, j, mesh->num_cols)]) * dx_mean;
+                        }
+                    }
 
-        //         panel_area = compute_area(corners);
-        //     }
-        // }
+                    dgammadt = (dgammadx - wing->bound_vorticity_prev[ipanel]) / dt;
+
+                    if (!i) {
+                        gamma_chordwise = gammas[ipanel];
+                    } else {
+                        gamma_chordwise = gammas[ipanel] - gammas[sub2ind(i - 1, j, mesh->num_cols)];
+                    }
+
+                    if (!j) {
+                        gamma_spanwise = gammas[ipanel];
+                    } else {
+                        gamma_chordwise = gammas[ipanel] - gammas[sub2ind(i, j - 1, mesh->num_cols)];
+                    }
+
+                    delta_pressure = AIR_DENSITY * (wing->freestream_velocities[ipanel] * gamma_chordwise / mean_chord +
+                                                    wing->spanwise_velocities[ipanel] * gamma_spanwise / width + dgammadt);
+                    
+                    lift -= delta_pressure * area * normal.x;
+
+                    wing->bound_vorticity_prev[ipanel] = dgammadx;
+                }
+            }
+        }
 
         if (istep && SAVE_VTK_FILES) {
             snprintf(file_name, sizeof(file_name), "wake_rings.vtk.%d", istep);
@@ -146,9 +192,8 @@ int main(int argc, char **argv) {
 
         current = clock();
 
-        printf("completed in %.0f msec\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
-        // printf("Lift = %f lbf, Induced Drag = %f lbf, Pressure = %f psi\n",
-        //        lift_total, drag_total, pressure_total);
+        printf("completed in %.0f msec...", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
+        printf("Lift = %f lbf\n", lift);
 
         last = current;
     }
