@@ -1,8 +1,12 @@
 #include <stdlib.h>
 
+#include "add.h"
 #include "wing.h"
 #include "sub2ind.h"
 #include "get_size.h"
+#include "subtract.h"
+#include "vector_to_mesh.h"
+#include "mesh_to_vector.h"
 #include "apply_rotation.h"
 #include "assign_rotation.h"
 
@@ -24,15 +28,10 @@ void shed_wake(Wing *wing) {
         assign_rotation(rot_mat, &wing->rotation_prev);
 
         for (size_t i = 0; i < num_points; i++) {
-            point.x = wing->wake_rings.x[i];
-            point.y = wing->wake_rings.y[i];
-            point.z = wing->wake_rings.z[i];
-
+            mesh_to_vector(&wing->wake_rings, i, &point);
             apply_rotation(rot_mat, &point);
-
-            wing->wake_rings.x[i] = point.x + wing->position_prev.x;
-            wing->wake_rings.y[i] = point.y + wing->position_prev.y;
-            wing->wake_rings.z[i] = point.z + wing->position_prev.z;
+            add(&point, &wing->position_prev, &point);
+            vector_to_mesh(&point, &wing->wake_rings, i);
         }
     }
 
@@ -42,10 +41,7 @@ void shed_wake(Wing *wing) {
         iring = sub2ind(wing->bound_rings.num_rows - 1, j, wing->bound_rings.num_cols);
         iwake = sub2ind(0, j, wing->wake_rings.num_cols);
 
-        point.x = wing->bound_rings.x[iring];
-        point.y = wing->bound_rings.y[iring];
-        point.z = wing->bound_rings.z[iring];
-
+        mesh_to_vector(&wing->bound_rings, iring, &point);
         apply_rotation(rot_mat, &point);
 
         if (wing->iteration) {
@@ -59,9 +55,8 @@ void shed_wake(Wing *wing) {
             }
         }
 
-        wing->wake_rings.x[iwake] = point.x + wing->position.x;
-        wing->wake_rings.y[iwake] = point.y + wing->position.y;
-        wing->wake_rings.z[iwake] = point.z + wing->position.z;
+        add(&point, &wing->position, &point);
+        vector_to_mesh(&point, &wing->wake_rings, iwake);
     }
 
     wing->wake_rings.num_rows = wing->iteration + 1;
@@ -79,15 +74,10 @@ void shed_wake(Wing *wing) {
     assign_rotation(rot_mat, &rotation_negative);
 
     for (size_t i = 0; i < num_points; i++) {
-        point.x = wing->wake_rings.x[i] - wing->position.x;
-        point.y = wing->wake_rings.y[i] - wing->position.y;
-        point.z = wing->wake_rings.z[i] - wing->position.z;
-
+        mesh_to_vector(&wing->wake_rings, i, &point);
+        subtract(&point, &wing->position, &point);
         apply_rotation(rot_mat, &point);
-
-        wing->wake_rings.x[i] = point.x;
-        wing->wake_rings.y[i] = point.y;
-        wing->wake_rings.z[i] = point.z;
+        vector_to_mesh(&point, &wing->wake_rings, i);
     }
 
     if (wing->wake_rings.num_rows > 1) {

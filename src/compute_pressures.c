@@ -18,40 +18,29 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
         return;
     }
 
+    double gamma_previ;
+    double gamma_prevj;
     double integral;
-    double gammasum;
-    double gammaij;
-    double gammapi;
-    double gammapj;
+    double partial;
+    double gamma;
     double normz;
-    double gmpj;
-    double gmpi;
     double lift;
     double area;
-    double dgdt;
     double vi;
     double vj;
     double dx;
     double dy;
-    double a;
-    double b;
-    double h;
 
     size_t ivortex;
-    size_t ivortex_first;
-    size_t ivortex_previ;
-    size_t ivortex_prevj;
 
     Vector point;
     Vector front;
-    Vector leading;
     Vector corners[4];
 
     lift = 0.0;
     for (int j = 0; j < wing->num_spanwise_panels; j++) {
-        ivortex_first = sub2ind(0, j, wing->num_spanwise_panels);
 
-        gammasum = 0.0;
+        integral = 0.0;
         for (int i = 0; i < wing->num_chordwise_panels; i++) {
             ivortex = sub2ind(i, j, wing->num_spanwise_panels);
 
@@ -67,44 +56,26 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
             vi = wing->chordwise_velocities[ivortex];
             vj = wing->spanwise_velocities[ivortex];
 
-            gammaij = wing->bound_vorticity[ivortex];
+            gamma = wing->bound_vorticity[ivortex];
 
-            if (i) {
-                ivortex_previ = sub2ind(i - 1, j, wing->num_spanwise_panels);
-                gammapi = wing->bound_vorticity[ivortex_previ];
-                gmpi = gammaij - gammapi;
-
-                b = point.x - leading.x;
-                h = (b - a) / i;
+            if (i > 1) {
+                gamma_previ = wing->bound_vorticity[sub2ind(i - 1, j, wing->num_spanwise_panels)];
             } else {
-                compute_between(corners, corners + 1, 0.5, &leading);
-                gmpi = gammaij;
-
-                a = point.x - leading.x;
+                gamma_previ = 0.0;
             }
 
             if (j) {
-                ivortex_prevj = sub2ind(i, j - 1, wing->num_spanwise_panels);
-                gammapj = wing->bound_vorticity[ivortex_prevj];
-                gmpj = gammaij - gammapj;
+                gamma_prevj = wing->bound_vorticity[sub2ind(i, j - 1, wing->num_spanwise_panels)];
             } else {
-                gmpj = gammaij;
+                gamma_prevj = 0.0;
             }
 
-            gammasum += 2.0 * gammaij;
-
-            if (i == 0) {
-                integral = 0.0;
-            } else if (i == 1) {
-                integral = 0.25 * h * (gammapi + gammaij);
-            } else {
-                integral = 0.25 * h * (gammasum - wing->bound_vorticity[ivortex_first] - gammaij);
-            }
-
-            dgdt = (integral - wing->vorticity_integral_buffer[ivortex]) / delta_time;
+            integral += gamma * dx;
+            partial = (integral - wing->vorticity_integral_buffer[ivortex]) / delta_time;
 
             wing->vorticity_integral_buffer[ivortex] = integral;
-            wing->pressures[ivortex] = rho * (vi * gmpi / dx + vj * gmpj / dy + dgdt);
+            wing->pressures[ivortex] = rho * (vi * (gamma - gamma_previ) / dx + 
+                                              vj * (gamma - gamma_prevj) / dy + partial);
 
             lift -= wing->pressures[ivortex] * area * normz;
         }

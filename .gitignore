@@ -2,4 +2,5 @@
 *.vtk
 *.vtk.*
 *.txt
+*.csv
 /.vscode/

@@ -2,16 +2,13 @@
 #include "vector.h"
 #include "sub2ind.h"
 #include "mesh_to_vector.h"
+#include "assign_corners.h"
 #include "induce_by_segment.h"
 
 void induce_velocities(Vector *point, Mesh *rings, int i, int j, Vector *vertical_buffer,
                        Vector *horizontal_buffer, Vector *velocities, double cutoff) {
     Vector corners[4];
-
-    mesh_to_vector(rings, sub2ind(i, j, rings->num_cols), corners);
-    mesh_to_vector(rings, sub2ind(i, j + 1, rings->num_cols), corners + 1);
-    mesh_to_vector(rings, sub2ind(i + 1, j + 1, rings->num_cols), corners + 2);
-    mesh_to_vector(rings, sub2ind(i + 1, j, rings->num_cols), corners + 3);
+    assign_corners(rings, i, j, corners);
 
     if (i > 0) {
         velocities[0].x = -horizontal_buffer[j].x;

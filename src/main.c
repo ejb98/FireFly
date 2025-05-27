@@ -51,6 +51,16 @@ int main(int argc, char **argv) {
 
     start = clock();
 
+    FILE *fp = fopen("lift_results.csv", "w");
+
+    if (fp == NULL) {
+        fprintf(stderr, "main: failed to open %s", "lift_results.csv");
+
+        return 1;
+    }
+
+    fprintf(fp, "Time (sec),Lift (N)\n");
+
     double t;
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
     double dt = dx / FAR_FIELD_VELOCITY / 4.0;
@@ -110,8 +120,8 @@ int main(int argc, char **argv) {
 
         current = clock();
 
-        printf("completed in %.0f msec...", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
-        printf("Lift = %f N\n", wing->lift);
+        printf("completed in %.0f msec...\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
+        fprintf(fp, "%f,%f\n", t, wing->lift);
 
         last = current;
     }
@@ -120,6 +130,7 @@ int main(int argc, char **argv) {
     print_attributes(wing);
     printf("Elapsed Time: %.2f sec\n", ((double) (current - start)) / CLOCKS_PER_SEC);
 
+    fclose(fp);
     free(wing->horizontal_buffer);
     free(wing->pivot_vector);
     free(wing->memory.elements);

@@ -7,6 +7,7 @@
 #include "vector.h"
 #include "sub2ind.h"
 #include "subtract.h"
+#include "assign_corners.h"
 #include "vector_to_mesh.h"
 #include "mesh_to_vector.h"
 #include "compute_normal.h"
@@ -26,10 +27,6 @@ void init_control_points(Wing *wing) {
     Vector middle_right;
     Vector control_left;
     Vector control_right;
-
-    Mesh *points = &wing->surface_panels;
-
-    int num_cols = points->num_cols;
     
     size_t ipoint;
 
@@ -37,10 +34,7 @@ void init_control_points(Wing *wing) {
         for (int j = 0; j < wing->control_points.num_cols; j++) {
             ipoint = sub2ind(i, j, wing->control_points.num_cols);
 
-            mesh_to_vector(points, sub2ind(i, j, num_cols), corners);
-            mesh_to_vector(points, sub2ind(i, j + 1, num_cols), corners + 1);
-            mesh_to_vector(points, sub2ind(i + 1, j + 1, num_cols), corners + 2);
-            mesh_to_vector(points, sub2ind(i + 1, j, num_cols), corners + 3);
+            assign_corners(&wing->surface_panels, i, j, corners);
 
             compute_between(corners, corners + 3, 0.75, &control_left);
             compute_between(corners, corners + 3, 0.5, &middle_left);
