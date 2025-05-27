@@ -49,7 +49,7 @@ void init_control_points(Wing *wing) {
             compute_between(corners + 3, corners + 2, 0.5, &middle_back);
             compute_between(corners, corners + 1, 0.5, &middle_front);
             compute_between(&control_left, &control_right, 0.5, &control);
-            compute_direction(&middle_back, &middle_front, &tangent_chordwise);
+            compute_direction(&middle_front, &middle_back, &tangent_chordwise);
             compute_direction(&middle_left, &middle_right, &tangent_spanwise);
             compute_normal(corners, &normal);
 
