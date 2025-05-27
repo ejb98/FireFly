@@ -25,7 +25,7 @@ int init_wing(Wing *wing) {
     size_t ntm1 = nt - 1;
     size_t nrnc = nr * nc;
     size_t np = 6 * (nrnc + ncp1 * (nt + nrp1)) + ntm1 * nc + 
-                nrnc * ((((3 + 2 * nc * (nr + ntm1)) + 3) + 1) + 5);
+                nrnc * ((((3 + 2 * nc * (nr + ntm1)) + 3) + 1) + 6);
 
     wing->memory.num_elements = np;
     wing->memory.next_free_index = 0;
@@ -49,8 +49,9 @@ int init_wing(Wing *wing) {
     wing->wake_displacements = construct_mesh(num_step, num_cols + 1, arena);
     wing->wake_vorticity = arena_allocate((nt - 1) * nc, arena);
     wing->bound_vorticity = arena_allocate(nr * nc, arena);
-    wing->bound_vorticity_prev = arena_allocate(nr * nc, arena);
-    wing->freestream_velocities = arena_allocate(nr * nc, arena);
+    wing->pressures = arena_allocate(nr * nc, arena);
+    wing->vorticity_integral_buffer = arena_allocate(nr * nc, arena);
+    wing->chordwise_velocities = arena_allocate(nr * nc, arena);
     wing->spanwise_velocities = arena_allocate(nr * nc, arena);
     wing->normal_velocities = arena_allocate(nr * nc, arena);
     wing->right_hand_side = arena_allocate(nr * nc, arena);

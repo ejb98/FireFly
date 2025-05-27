@@ -1,4 +1,5 @@
 *.exe
 *.vtk
 *.vtk.*
+*.txt
 /.vscode/

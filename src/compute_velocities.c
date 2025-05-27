@@ -50,7 +50,7 @@ void compute_velocities(Wing *wing, double delta_time) {
             divide(&velocity, delta_time);
 
             wing->normal_velocities[ipoint] = dot(&velocity, &normal);
-            wing->freestream_velocities[ipoint] = dot(&velocity, &tangent_chordwise);
+            wing->chordwise_velocities[ipoint] = dot(&velocity, &tangent_chordwise);
             wing->spanwise_velocities[ipoint] = dot(&velocity, &tangent_spanwise);
         }
     }

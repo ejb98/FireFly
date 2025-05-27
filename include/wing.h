@@ -16,6 +16,7 @@ typedef struct Wing {
 
     int *pivot_vector;
 
+    double lift;
     double cutoff;
     double semi_span;
     double root_chord;
@@ -28,8 +29,8 @@ typedef struct Wing {
 
     double *wake_vorticity;
     double *bound_vorticity;
-    double *bound_vorticity_prev;
-    double *freestream_velocities;
+    double *vorticity_integral_buffer;
+    double *chordwise_velocities;
     double *spanwise_velocities;
     double *normal_velocities;
     double *b_wing_on_wing;
@@ -37,6 +38,7 @@ typedef struct Wing {
     double *a_wing_on_wing;
     double *a_wake_on_wing;
     double *right_hand_side;
+    double *pressures;
 
     Mesh tangent_vectors_chordwise;
     Mesh tangent_vectors_spanwise;

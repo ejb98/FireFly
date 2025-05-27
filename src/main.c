@@ -18,11 +18,10 @@
 #include "compute_mean_chord.h"
 #include "compute_between.h"
 #include "compute_area.h"
+#include "compute_pressures.h"
 #include "assign_corners.h"
 
-#define NEWTON_TO_POUND 0.224809
-#define PASCAL_TO_PSI 0.000145038
-#define SAVE_VTK_FILES 1
+#define SAVE_VTK_FILES 0
 #define NUM_TIME_STEPS 160
 #define SWEEP_ANGLE_LEADING 90.0
 #define SWEEP_ANGLE_TRAILING 90.0
@@ -56,7 +55,6 @@ int main(int argc, char **argv) {
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
     double dt = dx / FAR_FIELD_VELOCITY / 4.0;
     double dx_wake = 0.3 * FAR_FIELD_VELOCITY * dt;
-    double lift;
 
     char file_name[50];
 
@@ -103,96 +101,7 @@ int main(int argc, char **argv) {
         wing_obj.rotation.z = 0.0;
 
         process(wing, dt);
-
-        lift = 0.0;
-
-        if (istep) {
-            Mesh *mesh = &wing->surface_panels;
-            Vector leading;
-            Vector corners[4];
-            Vector normal;
-            Vector front;
-            Vector point;
-            double mean_chord;
-            double width;
-            double area;
-            double gamma;
-            double gamma_chordwise;
-            double gamma_spanwise;
-            double dgammadt;
-            double dgammadx;
-            double delta_pressure;
-            double h;
-            double a;
-            double b;
-            double *gammas = wing->bound_vorticity;
-            size_t ipanel;
-
-            for (int j = 0; j < wing_obj.num_spanwise_panels; j++) {
-                for (int i = 0; i < wing_obj.num_chordwise_panels; i++) {
-                    ipanel = sub2ind(i, j, wing_obj.num_spanwise_panels);
-                    assign_corners(mesh, i, j, corners);
-                    area = compute_area(corners);
-                    mean_chord = compute_mean_chord(corners);
-                    subtract(corners + 1, corners, &front);
-                    width = compute_magnitude(&front);
-                    mesh_to_vector(&wing->normal_vectors, ipanel, &normal);
-                    mesh_to_vector(&wing->control_points, ipanel, &point);
-
-                    if (!i) {
-                        compute_between(corners, corners + 1, 0.5, &leading);
-                        a = point.x - leading.x;
-                    }
-
-                    dgammadx = 0.0;
-
-                    if (i > 0) {
-                        b = point.x - leading.x;
-
-                        for (int ichord = 0; ichord <= i; ichord++) {
-
-                            // if (!ichord) {
-                                gamma = gammas[sub2ind(ichord, j, mesh->num_cols)] / 2.0;
-                            // } else {
-                            //     gamma = (gammas[sub2ind(ichord, j, mesh->num_cols)] - 
-                            //             gammas[sub2ind(ichord - 1, j, mesh->num_cols)]) / 2.0;
-                            // }
-
-                            if (!ichord || (ichord == i)) {
-                                dgammadx += gamma;
-                            } else {
-                                dgammadx += 2.0 * gamma;
-                            }
-                        }
-
-                        h = (b - a) / i;
-
-                        dgammadx = 0.5 * h * dgammadx;
-                    }
-
-                    dgammadt = (dgammadx - wing->bound_vorticity_prev[ipanel]) / dt;
-
-                    if (!i) {
-                        gamma_chordwise = gammas[ipanel];
-                    } else {
-                        gamma_chordwise = gammas[ipanel] - gammas[sub2ind(i - 1, j, mesh->num_cols)];
-                    }
-
-                    if (!j) {
-                        gamma_spanwise = gammas[ipanel];
-                    } else {
-                        gamma_chordwise = gammas[ipanel] - gammas[sub2ind(i, j - 1, mesh->num_cols)];
-                    }
-
-                    delta_pressure = AIR_DENSITY * (wing->freestream_velocities[ipanel] * gamma_chordwise / mean_chord +
-                                                    wing->spanwise_velocities[ipanel] * gamma_spanwise / width + dgammadt);
-                    
-                    lift -= delta_pressure * area * normal.x;
-
-                    wing->bound_vorticity_prev[ipanel] = dgammadx;
-                }
-            }
-        }
+        compute_pressures(wing, dt, AIR_DENSITY);
 
         if (istep && SAVE_VTK_FILES) {
             snprintf(file_name, sizeof(file_name), "wake_rings.vtk.%d", istep);
@@ -202,7 +111,7 @@ int main(int argc, char **argv) {
         current = clock();
 
         printf("completed in %.0f msec...", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
-        printf("Coefficient of Lift = %f\n", 2.0 * lift / (AIR_DENSITY * FAR_FIELD_VELOCITY * FAR_FIELD_VELOCITY * wing_obj.surface_area));
+        printf("Lift = %f N\n", wing->lift);
 
         last = current;
     }

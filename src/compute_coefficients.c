@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "dot.h"
+#include "add.h"
 #include "wing.h"
 #include "mesh.h"
 #include "vector.h"
@@ -12,14 +14,12 @@
 void compute_coefficients(Wing *wing, Geometry inducing_rings) {
     Vector point;
     Vector normal;
-    Vector u_induced;
+    Vector w_induced;
     Vector v_induced;
     Vector vertical_buffer;
     Vector vel_norm[4];
 
     Mesh *rings;
-
-    double cutoff = wing->cutoff;
 
     double *a_matrix;
     double *b_matrix;
@@ -61,25 +61,16 @@ void compute_coefficients(Wing *wing, Geometry inducing_rings) {
             for (int i = 0; i < num_rows; i++) {
                 for (int j = 0; j < num_cols; j++) {
                     induce_velocities(&point, rings, i, j, &vertical_buffer, 
-                                      wing->horizontal_buffer, vel_norm, cutoff);
+                                      wing->horizontal_buffer, vel_norm, wing->cutoff);
                                       
                     imatrix = ipoint * num_rings + iring;
 
-                    u_induced.x = vel_norm[1].x + vel_norm[3].x;
-                    u_induced.y = vel_norm[1].y + vel_norm[3].y;
-                    u_induced.z = vel_norm[1].z + vel_norm[3].z;
+                    add(vel_norm + 1, vel_norm + 3, &w_induced);
+                    add(vel_norm, vel_norm + 2, &v_induced);
+                    add(&v_induced, &w_induced, &v_induced);
 
-                    v_induced.x = vel_norm[0].x + vel_norm[2].x + u_induced.x;
-                    v_induced.y = vel_norm[0].y + vel_norm[2].y + u_induced.y;
-                    v_induced.z = vel_norm[0].z + vel_norm[2].z + u_induced.z;
-
-                    a_matrix[imatrix] += v_induced.x * normal.x + 
-                                         v_induced.y * normal.y + 
-                                         v_induced.z * normal.z;
-
-                    b_matrix[imatrix] += u_induced.x * normal.x + 
-                                         u_induced.y * normal.y + 
-                                         u_induced.z * normal.z;
+                    a_matrix[imatrix] += dot(&v_induced, &normal);
+                    b_matrix[imatrix] += dot(&w_induced, &normal);
 
                     iring++;
                 }
