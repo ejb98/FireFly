@@ -8,6 +8,7 @@
 #include "sub2ind.h"
 #include "subtract.h"
 #include "mesh_to_vector.h"
+#include "vector_to_mesh.h"
 #include "apply_rotation.h"
 #include "assign_rotation.h"
 
@@ -20,8 +21,6 @@ void compute_velocities(Wing *wing, double delta_time) {
     Vector curr;
     Vector prev;
     Vector normal;
-    Vector tangent_chordwise;
-    Vector tangent_spanwise;
     Vector velocity;
 
     assign_rotation(rot_mat, &wing->rotation);
@@ -43,15 +42,13 @@ void compute_velocities(Wing *wing, double delta_time) {
             add(&prev, &wing->position_prev, &prev);
             
             mesh_to_vector(&wing->normal_vectors, ipoint, &normal);
-            mesh_to_vector(&wing->tangent_vectors_chordwise, ipoint, &tangent_chordwise);
-            mesh_to_vector(&wing->tangent_vectors_spanwise, ipoint, &tangent_spanwise);
 
             subtract(&curr, &prev, &velocity);
             divide(&velocity, delta_time);
 
+            vector_to_mesh(&velocity, &wing->kinematic_velocities, ipoint);
+
             wing->normal_velocities[ipoint] = dot(&velocity, &normal);
-            wing->chordwise_velocities[ipoint] = dot(&velocity, &tangent_chordwise);
-            wing->spanwise_velocities[ipoint] = dot(&velocity, &tangent_spanwise);
         }
     }
 }

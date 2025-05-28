@@ -26,6 +26,12 @@ void solve(Wing *wing) {
                 wing->wake_displacements.y[i] = 0.0;
                 wing->wake_displacements.z[i] = 0.0;
             }
+
+            for (size_t i = 0; i < get_size(&wing->wake_induced_velocities); i++) {
+                wing->wake_induced_velocities.x[i] = 0.0;
+                wing->wake_induced_velocities.y[i] = 0.0;
+                wing->wake_induced_velocities.z[i] = 0.0;
+            }
         }
 
         compute_coefficients(wing, WAKE_RINGS);

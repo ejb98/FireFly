@@ -69,6 +69,12 @@ void compute_coefficients(Wing *wing, Geometry inducing_rings) {
                     add(vel_norm, vel_norm + 2, &v_induced);
                     add(&v_induced, &w_induced, &v_induced);
 
+                    if (inducing_rings == WAKE_RINGS) {
+                        wing->wake_induced_velocities.x[ipoint] += v_induced.x;
+                        wing->wake_induced_velocities.y[ipoint] += v_induced.y;
+                        wing->wake_induced_velocities.z[ipoint] += v_induced.z;
+                    }
+
                     a_matrix[imatrix] += dot(&v_induced, &normal);
                     b_matrix[imatrix] += dot(&w_induced, &normal);
 

@@ -29,9 +29,7 @@ typedef struct Wing {
 
     double *wake_vorticity;
     double *bound_vorticity;
-    double *vorticity_integral_buffer;
-    double *chordwise_velocities;
-    double *spanwise_velocities;
+    double *vorticity_prev;
     double *normal_velocities;
     double *b_wing_on_wing;
     double *b_wake_on_wing;
@@ -48,6 +46,8 @@ typedef struct Wing {
     Mesh bound_rings;
     Mesh wake_rings;
     Mesh wake_displacements;
+    Mesh kinematic_velocities;
+    Mesh wake_induced_velocities;
 
     Vector position;
     Vector rotation;

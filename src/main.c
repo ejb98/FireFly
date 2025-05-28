@@ -21,7 +21,7 @@
 #include "compute_pressures.h"
 #include "assign_corners.h"
 
-#define SAVE_VTK_FILES 0
+#define SAVE_VTK_FILES 1
 #define NUM_TIME_STEPS 160
 #define SWEEP_ANGLE_LEADING 90.0
 #define SWEEP_ANGLE_TRAILING 90.0

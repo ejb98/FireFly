@@ -3,4 +3,5 @@
 *.vtk.*
 *.txt
 *.csv
+*.png
 /.vscode/
