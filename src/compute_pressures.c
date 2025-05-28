@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "add.h"
 #include "dot.h"
@@ -8,6 +9,7 @@
 #include "subtract.h"
 #include "mesh_to_vector.h"
 #include "assign_corners.h"
+#include "compute_magnitude.h"
 
 void compute_pressures(Wing *wing, double delta_time, double rho) {
     if (!wing->iteration) {
@@ -28,6 +30,8 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
     size_t ivortex;
 
     Vector front;
+    Vector left;
+    Vector right;
     Vector corners[4];
     Vector velocity;
     Vector tangent_spanwise;
@@ -43,12 +47,18 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
 
             assign_corners(&wing->surface_panels, i, j, corners);
             subtract(corners + 1, corners, &front);
+            subtract(corners + 3, corners, &left);
+            subtract(corners + 2, corners + 1, &right);
 
             normz = wing->normal_vectors.z[ivortex];
             
-            dy = corners[1].y - corners[0].y;
-            dx = 0.5 * ((corners[3].x - corners[0].x) + (corners[2].x - corners[1].x));
-            
+            dx = 0.5 * (compute_magnitude(&left) + compute_magnitude(&right));
+            dy = compute_magnitude(&front);
+
+            if (i == 0 && j == 0) {
+                printf("...(%f, %f)...", dx, dy);
+            }
+
             gamma = wing->bound_vorticity[ivortex];
 
             if (i) {

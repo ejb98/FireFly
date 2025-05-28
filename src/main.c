@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
     FILE *fp = fopen("lift_results.csv", "w");
 
     if (fp == NULL) {
-        fprintf(stderr, "main: failed to open %s", "lift_results.csv");
+        fprintf(stderr, "main: failed to open lift_results.csv");
 
         return 1;
     }
@@ -67,7 +67,6 @@ int main(int argc, char **argv) {
     double dx_wake = 0.3 * FAR_FIELD_VELOCITY * dt;
 
     const double vel_sq = FAR_FIELD_VELOCITY * FAR_FIELD_VELOCITY;
-    const double area = ROOT_CHORD * SEMI_SPAN;
     const double rho = AIR_DENSITY;
 
     char file_name[50];
@@ -125,7 +124,7 @@ int main(int argc, char **argv) {
         current = clock();
 
         printf("completed in %.0f msec...\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
-        fprintf(fp, "%f,%f\n", t, wing->lift / (0.5 * rho * vel_sq * area));
+        fprintf(fp, "%f,%f\n", t, wing->lift / (0.5 * rho * vel_sq));
 
         last = current;
     }
