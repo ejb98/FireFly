@@ -8,9 +8,6 @@
 #include "subtract.h"
 #include "mesh_to_vector.h"
 #include "assign_corners.h"
-#include "compute_between.h"
-#include "compute_magnitude.h"
-#include "compute_area.h"
 
 void compute_pressures(Wing *wing, double delta_time, double rho) {
     if (!wing->iteration) {
@@ -22,17 +19,14 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
     double gamma_previ;
     double gamma_prevj;
     double derivative;
-    double gamma_sum;
     double gamma;
     double normz;
     double lift;
-    double area;
     double dx;
     double dy;
 
     size_t ivortex;
 
-    Vector point;
     Vector front;
     Vector corners[4];
     Vector velocity;
@@ -44,18 +38,15 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
     lift = 0.0;
     for (int j = 0; j < wing->num_spanwise_panels; j++) {
 
-        gamma_sum = 0.0;
         for (int i = 0; i < wing->num_chordwise_panels; i++) {
             ivortex = sub2ind(i, j, wing->num_spanwise_panels);
 
-            mesh_to_vector(&wing->control_points, ivortex, &point);
             assign_corners(&wing->surface_panels, i, j, corners);
             subtract(corners + 1, corners, &front);
 
-            area = compute_area(corners);
             normz = wing->normal_vectors.z[ivortex];
             
-            dy = compute_magnitude(&front);
+            dy = corners[1].y - corners[0].y;
             dx = 0.5 * ((corners[3].x - corners[0].x) + (corners[2].x - corners[1].x));
             
             gamma = wing->bound_vorticity[ivortex];
@@ -72,10 +63,9 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
                 gamma_prevj = 0.0;
             }
 
-            gamma_sum += gamma * dx;
-            derivative = (gamma_sum - wing->vorticity_prev[ivortex]) / delta_time;
+            derivative = (gamma - wing->vorticity_prev[ivortex]) / delta_time;
 
-            wing->vorticity_prev[ivortex] = gamma_sum;
+            wing->vorticity_prev[ivortex] = gamma;
 
             mesh_to_vector(&wing->tangent_vectors_chordwise, ivortex, &tangent_chordwise);
             mesh_to_vector(&wing->tangent_vectors_spanwise, ivortex, &tangent_spanwise);
@@ -88,7 +78,7 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
                                               dot(&velocity, &tangent_spanwise) * (gamma - gamma_prevj) / dy +
                                               derivative);
 
-            lift -= area * wing->pressures[ivortex] * normz;
+            lift -= dx * dy * wing->pressures[ivortex] * normz;
         }
     }
 

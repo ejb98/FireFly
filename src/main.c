@@ -59,12 +59,16 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    fprintf(fp, "Time (sec),Lift (N)\n");
+    fprintf(fp, "Time (sec),Lift Coefficient\n");
 
     double t;
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
     double dt = dx / FAR_FIELD_VELOCITY / 4.0;
     double dx_wake = 0.3 * FAR_FIELD_VELOCITY * dt;
+
+    const double vel_sq = FAR_FIELD_VELOCITY * FAR_FIELD_VELOCITY;
+    const double area = ROOT_CHORD * SEMI_SPAN;
+    const double rho = AIR_DENSITY;
 
     char file_name[50];
 
@@ -121,7 +125,7 @@ int main(int argc, char **argv) {
         current = clock();
 
         printf("completed in %.0f msec...\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
-        fprintf(fp, "%f,%f\n", t, wing->lift);
+        fprintf(fp, "%f,%f\n", t, wing->lift / (0.5 * rho * vel_sq * area));
 
         last = current;
     }
