@@ -5,9 +5,9 @@
 #include "assign_corners.h"
 #include "induce_by_segment.h"
 
-void induce_velocities(Vector *point, Mesh *rings, int i, int j, Vector *vertical_buffer,
-                       Vector *horizontal_buffer, Vector *velocities, double cutoff) {
-    Vector corners[4];
+void induce_velocities(Vector3D *point, Mesh *rings, int i, int j, Vector3D *vertical_buffer,
+                       Vector3D *horizontal_buffer, Vector3D *velocities, double cutoff) {
+    Vector3D corners[4];
     assign_corners(rings, i, j, corners);
 
     if (i > 0) {

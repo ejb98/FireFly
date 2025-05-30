@@ -3,6 +3,6 @@
 
 #include "vector.h"
 
-void compute_normal(Vector *corners, Vector *result);
+void compute_normal(Vector3D *corners, Vector3D *result);
 
 #endif

@@ -3,8 +3,8 @@
 #include "compute_magnitude.h"
 #include "compute_mean_chord.h"
 
-double compute_area(Vector *corners) {
-    Vector front;
+double compute_area(Vector3D *corners) {
+    Vector3D front;
 
     subtract(corners + 1, corners, &front);
 

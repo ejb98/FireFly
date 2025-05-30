@@ -3,6 +3,6 @@
 
 #include "vector.h"
 
-double compute_mean_chord(Vector *corners);
+double compute_mean_chord(Vector3D *corners);
 
 #endif

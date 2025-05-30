@@ -3,6 +3,6 @@
 
 #include "vector.h"
 
-void compute_direction(const Vector *start, const Vector *end, Vector *direction);
+void compute_direction(const Vector3D *start, const Vector3D *end, Vector3D *direction);
 
 #endif

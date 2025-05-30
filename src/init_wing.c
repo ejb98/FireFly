@@ -15,7 +15,7 @@ int init_wing(Wing *wing) {
     
     int num_rows = wing->num_chordwise_panels;
     int num_cols = wing->num_spanwise_panels;
-    int num_step = wing->num_wake_point_rows;
+    int num_step = wing->num_time_steps;
 
     size_t nr = num_rows;
     size_t nrp1 = nr + 1;
@@ -60,7 +60,7 @@ int init_wing(Wing *wing) {
     wing->a_wake_on_wing = arena_allocate(nr * nc * (nt - 1) * nc, arena);
     wing->b_wake_on_wing = arena_allocate(nr * nc * (nt - 1) * nc, arena);
     wing->pivot_vector = (int *) calloc(nr * nc, sizeof(int));
-    wing->horizontal_buffer = (Vector *) calloc(nc, sizeof(Vector));
+    wing->horizontal_buffer = (Vector3D *) calloc(nc, sizeof(Vector3D));
     
     if (wing->pivot_vector == NULL) {
         fprintf(stderr, "init_wing: failed to allocate pivot vector of length %zu", nr * nc);

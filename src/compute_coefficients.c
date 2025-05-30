@@ -12,12 +12,12 @@
 #include "induce_velocities.h"
 
 void compute_coefficients(Wing *wing, Geometry inducing_rings) {
-    Vector point;
-    Vector normal;
-    Vector w_induced;
-    Vector v_induced;
-    Vector vertical_buffer;
-    Vector vel_norm[4];
+    Vector3D point;
+    Vector3D normal;
+    Vector3D w_induced;
+    Vector3D v_induced;
+    Vector3D vertical_buffer;
+    Vector3D vel_norm[4];
 
     Mesh *rings;
 
@@ -61,7 +61,7 @@ void compute_coefficients(Wing *wing, Geometry inducing_rings) {
             for (int i = 0; i < num_rows; i++) {
                 for (int j = 0; j < num_cols; j++) {
                     induce_velocities(&point, rings, i, j, &vertical_buffer, 
-                                      wing->horizontal_buffer, vel_norm, wing->cutoff);
+                                      wing->horizontal_buffer, vel_norm, wing->cutoff_radius);
                                       
                     imatrix = ipoint * num_rings + iring;
 

@@ -16,17 +16,17 @@
 #include "compute_magnitude.h"
 
 void init_control_points(Wing *wing) {
-    Vector normal;
-    Vector control;
-    Vector tangent_spanwise;
-    Vector tangent_chordwise;
-    Vector corners[4];
-    Vector middle_back;
-    Vector middle_front;
-    Vector middle_left;
-    Vector middle_right;
-    Vector control_left;
-    Vector control_right;
+    Vector3D normal;
+    Vector3D control;
+    Vector3D tangent_spanwise;
+    Vector3D tangent_chordwise;
+    Vector3D corners[4];
+    Vector3D middle_back;
+    Vector3D middle_front;
+    Vector3D middle_left;
+    Vector3D middle_right;
+    Vector3D control_left;
+    Vector3D control_right;
     
     size_t ipoint;
 

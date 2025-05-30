@@ -3,6 +3,6 @@
 
 #include "vector.h"
 
-void assign_rotation(double rotation_matrix[3][3], const Vector *rotation);
+void assign_rotation(double rotation_matrix[3][3], const Vector3D *rotation);
 
 #endif

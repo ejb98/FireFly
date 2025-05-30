@@ -3,6 +3,6 @@
 
 #include "vector.h"
 
-double compute_area(Vector *corners);
+double compute_area(Vector3D *corners);
 
 #endif

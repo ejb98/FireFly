@@ -2,10 +2,10 @@
 #define GEOMETRY_H
 
 typedef enum Geometry {
-    PANELS,
-    POINTS,
-    WAKE_RINGS,
-    BOUND_RINGS,
+    SURFACE_POINTS,
+    CONTROL_POINTS,
+    WAKE_RING_POINTS,
+    BOUND_RING_POINTS,
     NUM_GEOMETRY_TYPES
 } Geometry;
 

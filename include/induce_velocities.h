@@ -4,7 +4,7 @@
 #include "mesh.h"
 #include "vector.h"
 
-void induce_velocities(Vector *point, Mesh *rings, int i, int j, Vector *vertical_buffer,
-                       Vector *horizontal_buffer, Vector *velocities, double cutoff);
+void induce_velocities(Vector3D *point, Mesh *rings, int i, int j, Vector3D *vertical_buffer,
+                       Vector3D *horizontal_buffer, Vector3D *velocities, double cutoff);
 
 #endif

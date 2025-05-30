@@ -13,7 +13,7 @@
 
 void compute_pressures(Wing *wing, double delta_time, double rho) {
     if (!wing->iteration) {
-        wing->lift = 0.0;
+        wing->total_lift = 0.0;
 
         return;
     }
@@ -29,15 +29,15 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
 
     size_t ivortex;
 
-    Vector front;
-    Vector left;
-    Vector right;
-    Vector corners[4];
-    Vector velocity;
-    Vector tangent_spanwise;
-    Vector tangent_chordwise;
-    Vector kinematic_velocity;
-    Vector wake_induced_velocity;
+    Vector3D front;
+    Vector3D left;
+    Vector3D right;
+    Vector3D corners[4];
+    Vector3D velocity;
+    Vector3D tangent_spanwise;
+    Vector3D tangent_chordwise;
+    Vector3D kinematic_velocity;
+    Vector3D wake_induced_velocity;
 
     lift = 0.0;
     for (int j = 0; j < wing->num_spanwise_panels; j++) {
@@ -92,5 +92,5 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
         }
     }
 
-    wing->lift = lift;
+    wing->total_lift = lift;
 }

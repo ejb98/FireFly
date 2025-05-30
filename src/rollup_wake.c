@@ -21,10 +21,10 @@ void rollup_wake(Wing *wing, double delta_time) {
 
     int rollup_y;
 
-    Vector point;
-    Vector vel_induced;
-    Vector vertical_buffer;
-    Vector vel_norm[4];
+    Vector3D point;
+    Vector3D vel_induced;
+    Vector3D vertical_buffer;
+    Vector3D vel_norm[4];
 
     Mesh *rings;
     Mesh *points = &wing->wake_rings;
@@ -32,7 +32,7 @@ void rollup_wake(Wing *wing, double delta_time) {
     Mesh *ring_meshes[2] = {&wing->bound_rings, &wing->wake_rings};
 
     double gamma;
-    double cutoff = wing->cutoff;
+    double cutoff = wing->cutoff_radius;
     double *gammas = wing->wake_vorticity;
 
     for (int imesh = 0; imesh < 2; imesh++) {

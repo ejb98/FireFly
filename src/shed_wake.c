@@ -11,7 +11,7 @@
 #include "assign_rotation.h"
 
 void shed_wake(Wing *wing) {
-    Vector point;
+    Vector3D point;
 
     double rot_mat[3][3];
 
@@ -69,7 +69,7 @@ void shed_wake(Wing *wing) {
 
     num_points = get_size(&wing->wake_rings);
 
-    Vector rotation_negative = {-wing->rotation.x, -wing->rotation.y, -wing->rotation.z};
+    Vector3D rotation_negative = {-wing->rotation.x, -wing->rotation.y, -wing->rotation.z};
 
     assign_rotation(rot_mat, &rotation_negative);
 

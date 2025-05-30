@@ -4,6 +4,6 @@
 #include "mesh.h"
 #include "vector.h"
 
-void assign_corners(const Mesh *mesh, int i, int j, Vector *corners);
+void assign_corners(const Mesh *mesh, int i, int j, Vector3D *corners);
 
 #endif

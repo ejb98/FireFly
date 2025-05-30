@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 
     Wing wing_obj = {.num_chordwise_panels = NUM_CHORDWISE_PANELS,
                      .num_spanwise_panels = NUM_SPANWISE_PANELS,
-                     .num_wake_point_rows = NUM_TIME_STEPS,
+                     .num_time_steps = NUM_TIME_STEPS,
                      .num_wake_deforming_rows = NUM_WAKE_DEFORMING_ROWS,
                      .naca_m = NACA_M,
                      .naca_p = NACA_P,
@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
                      .sweep_angle_leading = SWEEP_ANGLE_LEADING,
                      .sweep_angle_trailing = SWEEP_ANGLE_TRAILING,
                      .angle_of_attack = ANGLE_OF_ATTACK,
-                     .cutoff = CUTOFF,
+                     .cutoff_radius = CUTOFF,
                      .wake_offset = dx_wake};
 
     if (init_wing(&wing_obj)) {
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
         current = clock();
 
         printf("completed in %.0f msec...\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
-        fprintf(fp, "%f,%f\n", t, wing->lift / (0.5 * rho * vel_sq));
+        fprintf(fp, "%f,%f\n", t, wing->total_lift / (0.5 * rho * vel_sq));
 
         last = current;
     }

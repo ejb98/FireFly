@@ -18,10 +18,10 @@ void compute_velocities(Wing *wing, double delta_time) {
     double rot_mat[3][3];
     double rot_mat_prev[3][3];
 
-    Vector curr;
-    Vector prev;
-    Vector normal;
-    Vector velocity;
+    Vector3D curr;
+    Vector3D prev;
+    Vector3D normal;
+    Vector3D velocity;
 
     assign_rotation(rot_mat, &wing->rotation);
     assign_rotation(rot_mat_prev, &wing->rotation_prev);
