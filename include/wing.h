@@ -105,7 +105,7 @@ void Wing_compute_surface_points(Wing *wing) {
     }
 }
 
-void Wing_init_memory_arenas(Wing *wing) {
+void Wing_allocate(Wing *wing) {
     size_t num_control_points = wing->num_control_points;
     size_t num_normal_vectors = num_control_points;
     size_t num_surface_points = wing->num_surface_points;
@@ -147,7 +147,30 @@ void Wing_init_memory_arenas(Wing *wing) {
                                  num_previous_bound_vortex_strengths;
     
     wing->vector3d_arena = Vector3DArena_construct(num_vector3d_elements);
-    wing->double_arena = DoubleArena_allocate(num_double_elements);
+    wing->double_arena = DoubleArena_construct(num_double_elements);
+
+    Vector3DArena *vector3d_arena;
+    DoubleArena *double_arena;
+
+    wing->normal_vectors = Vector3DArena_allocate(vector3d_arena, num_normal_vectors);
+    wing->surface_points = Vector3DArena_allocate(vector3d_arena, num_surface_points);
+    wing->control_points = Vector3DArena_allocate(vector3d_arena, num_control_points);
+    wing->wake_ring_points = Vector3DArena_allocate(vector3d_arena, num_wake_ring_points);
+    wing->bound_ring_points = Vector3DArena_allocate(vector3d_arena, num_bound_ring_points);
+    wing->kinematic_velocities = Vector3DArena_allocate(vector3d_arena, num_kinematic_velocities);
+    wing->wake_induced_velocities = Vector3DArena_allocate(vector3d_arena, num_wake_induced_velocities);
+    wing->wake_point_displacements = Vector3DArena_allocate(vector3d_arena, num_wake_point_displacements);
+    wing->spanwise_tangent_vectors = Vector3DArena_allocate(vector3d_arena, num_spanwise_tangent_vectors);
+    wing->chordwise_tangent_vectors = Vector3DArena_allocate(vector3d_arena, num_chordwise_tangent_vectors);
+    wing->horizontal_velocity_buffer = Vector3DArena_allocate(vector3d_arena, num_horizontal_velocity_buffer_elements);
+
+    wing->pressures = DoubleArena_allocate(double_arena, num_pressures);
+    wing->a_wing_on_wing = DoubleArena_allocate(double_arena, num_a_wing_on_wing_elements);
+    wing->b_wing_on_wing = DoubleArena_allocate(double_arena, num_b_wing_on_wing_elements);
+    wing->right_hand_side = DoubleArena_allocate(double_arena, num_right_hand_side_elements);
+    wing->wake_vortex_strengths = DoubleArena_allocate(double_arena, num_wake_vortex_strengths);
+    wing->bound_vortex_strengths = DoubleArena_allocate(double_arena, num_bound_vortex_strengths);
+    wing->previous_bound_vortex_strengths = DoubleArena_allocate(double_arena, num_previous_bound_vortex_strengths);
 }
 
 Wing Wing_construct(int naca_m,
@@ -183,7 +206,7 @@ Wing Wing_construct(int naca_m,
 
     Wing *wing = &wing;
     
-    Wing_init_memory_arenas(wing);
+    Wing_allocate(wing);
     Wing_compute_surface_points(wing);
 }
 
