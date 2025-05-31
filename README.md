@@ -9,7 +9,7 @@ It serves as a modern interpretation and exploration of unsteady aerodynamic mod
 
 ## Build Instructions for Windows Users
 
-To compile this project, you must download and install the OpenBLAS Windows binary (ZIP), and add the path to the OpenBLAS bin directory to your system's PATH variables. The provided build script assumes that OpenBLAS has been extracted to the C directory.
+To compile this project on Windows, you must download and install the OpenBLAS Windows binary (ZIP), and add the path of the OpenBLAS bin directory to your system's PATH variables. The provided PowerShell build script assumes that OpenBLAS has been extracted to the C:\ drive. To compile, run from PowerShell:
 
 ```powershell
-./build.ps1
+.\build.ps1
