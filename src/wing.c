@@ -26,7 +26,7 @@ Wing *Wing_construct(int naca_m,
     Wing *wing = (Wing *) malloc(sizeof(Wing));
 
     if (wing == NULL) {
-        fprintf(stderr, "Wing_construct: memory allocation for struct Wing returned NULL");
+        fprintf(stderr, "Wing_construct: malloc returned NULL for wing");
     }
 
     Vector3D zeros = {0.0, 0.0, 0.0};
@@ -46,7 +46,7 @@ Wing *Wing_construct(int naca_m,
     wing->pivot_vector = (int *) malloc(sizeof(int) * num_panels);
 
     if (wing->pivot_vector == NULL) {
-        fprintf(stderr, "Wing_construct: memory allocation for pivot_vector returned NULL");
+        fprintf(stderr, "Wing_construct: malloc returned NULL for pivot_vector");
     }
 
     wing->semi_span = semi_span;

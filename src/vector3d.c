@@ -85,7 +85,7 @@ Vector3D *Vector3D_malloc(size_t num_elements) {
     Vector3D *ptr = (Vector3D *) malloc(sizeof(Vector3D) * num_elements);
 
     if (ptr == NULL) {
-        fprintf(stderr, "Vector3D_malloc: memory allocation for %zu elements returned NULL", num_elements);
+        fprintf(stderr, "Vector3D_malloc: malloc returned NULL for %zu elements", num_elements);
     }
 
     return ptr;

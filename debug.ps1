@@ -1,1 +1,0 @@
-clang -g -O0 -std=c99 -Wall -Werror src\*.c -Iinclude -IC:\OpenBLAS\include -LC:\OpenBLAS\lib -lopenblas -o firefly.exe
