@@ -5,6 +5,7 @@
 #include "wing.h"
 #include "geometry.h"
 #include "constants.h"
+#include "print_firefly.h"
 
 #define NACA_M 6
 #define NACA_P 4
@@ -33,8 +34,6 @@ int main(int argc, char **argv) {
 
     start = clock();
 
-    char file_path[] = "results\\";
-
     double t;
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
     double dt = dx / FAR_FIELD_VELOCITY / 4.0;
@@ -45,6 +44,8 @@ int main(int argc, char **argv) {
                                 ANGLE_OF_ATTACK, dx_wake, LEADING_SWEEP, TRAILING_SWEEP);
     
     Wing_write_points_to_vtk(wing, SURFACE_POINTS, "results\\");                     
+    Wing_write_points_to_vtk(wing, CONTROL_POINTS, "results\\");                     
+    Wing_write_points_to_vtk(wing, BOUND_RING_POINTS, "results\\");                     
 
     last = clock();
 
@@ -56,8 +57,6 @@ int main(int argc, char **argv) {
         wing->position.x = -FAR_FIELD_VELOCITY * t;
         wing->position.z = HEAVING_AMPLITUDE * sin(2.0 * PI * HEAVING_FREQUENCY * t);
         wing->rotation.y = PITCHING_AMPLITUDE * sin(2.0 * PI * PITCHING_FREQUENCY * t) * PI / 180.0;
-
-        process(wing, dt);
 
         current = clock();
 

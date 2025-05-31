@@ -8,6 +8,7 @@
 #include "vector3d.h"
 #include "constants.h"
 #include "allocate_doubles.h"
+#include "fill_rotation_matrix.h"
 
 Wing *Wing_construct(int naca_m,
                      int naca_p,
@@ -83,6 +84,9 @@ Wing *Wing_construct(int naca_m,
     wing->horizontal_velocity_buffer = Vector3D_malloc(wing->num_spanwise_panels);
 
     Wing_compute_surface_points(wing);
+    Wing_compute_surface_vectors(wing);
+    Wing_compute_control_points(wing);
+    Wing_compute_bound_ring_points(wing);
 
     return wing;
 }
@@ -218,7 +222,7 @@ void Wing_get_corners(const Wing *wing, Geometry geometry, int i, int j, Vector3
     indices[3] = sub2ind(i + 1, j, num_cols);
 
     if (indices[2] > num_points - 1) {
-        printf(stderr, "Wing_get_corners: index %zu is out of bounds for array of size %zu", indices[2], num_points);
+        fprintf(stderr, "Wing_get_corners: index %zu is out of bounds for array of size %zu", indices[2], num_points);
     }
 
     for (int i = 0; i < 4; i++) {
@@ -227,8 +231,6 @@ void Wing_get_corners(const Wing *wing, Geometry geometry, int i, int j, Vector3
 }
 
 void Wing_write_points_to_vtk(const Wing *wing, Geometry geometry, const char *file_path) {
-    size_t length = strlen(file_path);
-
     int num_rows;
     int num_cols;
 
@@ -319,10 +321,10 @@ void Wing_compute_surface_vectors(Wing *wing) {
     Vector3D vectora;
     Vector3D vectorb;
     Vector3D *normal;
-    Vector3D **corners;
+    Vector3D *corners[4];
 
-    for (int i = 0; i < wing->num_chordwise_panels + 1; i++) {
-        for (int j = 0; j < wing->num_spanwise_panels + 1; j++) {
+    for (int i = 0; i < wing->num_chordwise_panels; i++) {
+        for (int j = 0; j < wing->num_spanwise_panels; j++) {
             ipanel = sub2ind(i, j, wing->num_spanwise_panels);
             normal = wing->normal_vectors + ipanel;
             Wing_get_corners(wing, SURFACE_POINTS, i, j, corners);
@@ -336,6 +338,49 @@ void Wing_compute_surface_vectors(Wing *wing) {
             Vector3D_normalize(normal);
             Vector3D_direction(&front, &back, wing->chordwise_tangent_vectors + ipanel);
             Vector3D_direction(&left, &right, wing->spanwise_tangent_vectors + ipanel);
+        }
+    }
+}
+
+void Wing_compute_control_points(Wing *wing) {
+    size_t ipanel;
+    Vector3D left;
+    Vector3D right;
+    Vector3D *corners[4];
+
+    for (int i = 0; i < wing->num_chordwise_panels; i++) {
+        for (int j = 0; j < wing->num_spanwise_panels; j++) {
+            ipanel = sub2ind(i, j, wing->num_spanwise_panels);
+            Wing_get_corners(wing, SURFACE_POINTS, i, j, corners);
+            Vector3D_between(corners[0], corners[3], 0.75, &left);
+            Vector3D_between(corners[1], corners[2], 0.75, &right);
+            Vector3D_between(&left, &right, 0.5, wing->control_points + ipanel);
+        }
+    }
+}
+
+void Wing_compute_bound_ring_points(Wing *wing) {
+    size_t ipoint;
+
+    Vector3D *next;
+    Vector3D *point;
+
+    int num_rows = wing->num_chordwise_panels + 1;
+    int num_cols = wing->num_spanwise_panels + 1;
+
+    for (int j = 0; j < num_cols; j++) {
+        for (int i = 0; i < num_rows; i++) {
+            ipoint = sub2ind(i, j, num_cols);
+            point = wing->surface_points + ipoint;
+
+            if (i == num_rows - 1) {
+                wing->bound_ring_points[ipoint].x = point->x + wing->starting_vortex_offset;
+                wing->bound_ring_points[ipoint].y = point->y;
+                wing->bound_ring_points[ipoint].z = point->z;
+            } else {
+                next = wing->surface_points + sub2ind(i + 1, j, num_cols);
+                Vector3D_between(point, next, 0.25, wing->bound_ring_points + ipoint);
+            }
         }
     }
 }

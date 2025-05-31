@@ -65,6 +65,8 @@ Wing *Wing_construct(int naca_m,
 void Wing_free(Wing *wing);
 void Wing_compute_surface_points(Wing *wing);
 void Wing_compute_surface_vectors(Wing *wing);
+void Wing_compute_bound_ring_points(Wing *wing);
+void Wing_compute_control_points(Wing *wing);
 void Wing_print_attributes(const Wing *wing);
 void Wing_write_points_to_vtk(const Wing *wing, Geometry geometry, const char *file_path);
 void Wing_get_corners(const Wing *wing, Geometry geometry, int i, int j, Vector3D **corners);
