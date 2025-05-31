@@ -87,7 +87,7 @@ Wing *Wing_construct(int naca_m,
     return wing;
 }
 
-void Wing_destruct(Wing *wing) {    
+void Wing_free(Wing *wing) {    
     free(wing->pivot_vector);
 
     free(wing->pressures);
@@ -113,6 +113,17 @@ void Wing_destruct(Wing *wing) {
     free(wing);
 }
 
+void Wing_print_attributes(const Wing *wing) {
+    printf("Semi Span: %.2f m\n", wing->semi_span);
+    printf("Root Chord: %.2f m\n", wing->root_chord);
+    printf("Leading Edge Sweep Angle: %.2f deg\n", wing->leading_edge_sweep_angle);
+    printf("Trailing Edge Sweep Angle: %.2f deg\n", wing->trailing_edge_sweep_angle);
+    printf("Angle of Attack: %.2f deg\n", wing->angle_of_attack);
+    printf("Airfoil: NACA %d%dXX\n", wing->naca_m, wing->naca_p);
+    printf("Spanwise Panels: %d\n", wing->num_spanwise_panels);
+    printf("Chordwise Panels: %d\n", wing->num_chordwise_panels);
+}
+
 void Wing_compute_surface_points(Wing *wing) {
     double constant;
     double local_chord;
@@ -129,7 +140,7 @@ void Wing_compute_surface_points(Wing *wing) {
     Vector3D rotation = {0.0, wing->angle_of_attack * PI / 180.0, 0.0};
     Vector3D *point;
 
-    Vector3D_fill_rotation_matrix(&rotation, rotation_matrix);
+    fill_rotation_matrix(&rotation, rotation_matrix);
 
     for (int j = 0; j < wing->num_spanwise_panels + 1; j++) {
         for (int i = 0; i < wing->num_chordwise_panels + 1; i++) {
@@ -159,18 +170,64 @@ void Wing_compute_surface_points(Wing *wing) {
     }
 }
 
-void Wing_write_points_to_vtk(Wing *wing, Geometry geometry, const char *file_path) {
-    size_t length = strlen(file_path);
+Vector3D *Wing_get_points(const Wing *wing, Geometry geometry, int *num_rows, int *num_cols) {
+    Vector3D *points;
 
-    char back_slash = '\\';
-    char forward_slash = '/';
-    char last_character = file_path[length - 1];
-
-    if (last_character != forward_slash && last_character != back_slash) {
-        fprintf(stderr, "Wing_write_points_to_vtk: last character of file path must be either '\\' or '/'");
-
-        return;
+    if (geometry == CONTROL_POINTS) {
+        *num_cols = wing->num_spanwise_panels;
+    } else {
+        *num_cols = wing->num_spanwise_panels + 1;
     }
+
+    switch (geometry) {
+        case CONTROL_POINTS:
+            points = wing->control_points;
+            *num_rows = wing->num_chordwise_panels;
+
+            break;
+        case SURFACE_POINTS:
+            points = wing->surface_points;
+            *num_rows = wing->num_chordwise_panels + 1;
+
+            break;
+        case WAKE_RING_POINTS:
+            points = wing->wake_ring_points;
+            *num_rows = wing->iteration;
+
+            break;
+        case BOUND_RING_POINTS:
+            points = wing->bound_ring_points;
+            *num_rows = wing->num_chordwise_panels + 1;
+    }
+
+    return points;
+}
+
+void Wing_get_corners(const Wing *wing, Geometry geometry, int i, int j, Vector3D **corners) {
+    int num_rows;
+    int num_cols;
+
+    Vector3D *points = Wing_get_points(wing, geometry, &num_rows, &num_cols);
+
+    size_t indices[4];
+    size_t num_points = ((size_t) num_rows) * num_cols;
+
+    indices[0] = sub2ind(i, j, num_cols);
+    indices[1] = sub2ind(i, j + 1, num_cols);
+    indices[2] = sub2ind(i + 1, j + 1, num_cols);
+    indices[3] = sub2ind(i + 1, j, num_cols);
+
+    if (indices[2] > num_points - 1) {
+        printf(stderr, "Wing_get_corners: index %zu is out of bounds for array of size %zu", indices[2], num_points);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        corners[i] = points + indices[i];
+    }
+}
+
+void Wing_write_points_to_vtk(const Wing *wing, Geometry geometry, const char *file_path) {
+    size_t length = strlen(file_path);
 
     int num_rows;
     int num_cols;
@@ -178,41 +235,23 @@ void Wing_write_points_to_vtk(Wing *wing, Geometry geometry, const char *file_pa
     char full_path[175];
     char description[20];
 
-    Vector3D *points;
+    Vector3D *points = Wing_get_points(wing, geometry, &num_rows, &num_cols);
 
     switch (geometry) {
         case CONTROL_POINTS:
             strcpy(description, "control_points");
-            points = wing->control_points;
-            num_rows = wing->num_chordwise_panels;
-            num_cols = wing->num_spanwise_panels;
 
             break;
         case SURFACE_POINTS:
             strcpy(description, "surface_points");
-            points = wing->surface_points;
-            num_rows = wing->num_chordwise_panels + 1;
-            num_cols = wing->num_spanwise_panels + 1;
 
             break;
         case WAKE_RING_POINTS:
             strcpy(description, "wake_ring_points");
-            points = wing->wake_ring_points;
-            num_rows = wing->iteration;
-            num_cols = wing->num_spanwise_panels + 1;
 
             break;
         case BOUND_RING_POINTS:
             strcpy(description, "bound_ring_points");
-            points = wing->bound_ring_points;
-            num_rows = wing->num_chordwise_panels + 1;
-            num_cols = wing->num_spanwise_panels + 1;
-
-            break;
-        default:
-            fprintf(stderr, "Wing_write_points_to_vtk: inapplicable geometry cannot be written to file");
-
-            return;
     }
     
     if (num_rows < 2) {
@@ -269,4 +308,34 @@ void Wing_write_points_to_vtk(Wing *wing, Geometry geometry, const char *file_pa
     }
 
     fclose(file);
+}
+
+void Wing_compute_surface_vectors(Wing *wing) {
+    size_t ipanel;
+    Vector3D left;
+    Vector3D back;
+    Vector3D front;
+    Vector3D right;
+    Vector3D vectora;
+    Vector3D vectorb;
+    Vector3D *normal;
+    Vector3D **corners;
+
+    for (int i = 0; i < wing->num_chordwise_panels + 1; i++) {
+        for (int j = 0; j < wing->num_spanwise_panels + 1; j++) {
+            ipanel = sub2ind(i, j, wing->num_spanwise_panels);
+            normal = wing->normal_vectors + ipanel;
+            Wing_get_corners(wing, SURFACE_POINTS, i, j, corners);
+            Vector3D_between(corners[0], corners[3], 0.5, &left);
+            Vector3D_between(corners[2], corners[3], 0.5, &back);
+            Vector3D_between(corners[0], corners[1], 0.5, &front);
+            Vector3D_between(corners[1], corners[2], 0.5, &right);
+            Vector3D_subtract(corners[2], corners[0], &vectora);
+            Vector3D_subtract(corners[1], corners[3], &vectorb);
+            Vector3D_cross(&vectora, &vectorb, normal);
+            Vector3D_normalize(normal);
+            Vector3D_direction(&front, &back, wing->chordwise_tangent_vectors + ipanel);
+            Vector3D_direction(&left, &right, wing->spanwise_tangent_vectors + ipanel);
+        }
+    }
 }

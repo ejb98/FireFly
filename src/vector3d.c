@@ -17,35 +17,16 @@ void Vector3D_subtract(const Vector3D *vector_a, const Vector3D *vector_b, Vecto
     difference->z = vector_a->z - vector_b->z;
 }
 
-void Vector3D_divide(Vector3D *vector, double divisor) {
-    vector->x /= divisor;
-    vector->y /= divisor;
-    vector->z /= divisor;
-}
-
 void Vector3D_multiply(Vector3D *vector, double multiplier) {
     vector->x *= multiplier;
     vector->y *= multiplier;
     vector->z *= multiplier;
 }
 
-void Vector3D_fill_rotation_matrix(const Vector3D *rotation, double rotation_matrix[3][3]) {
-    double cg = cos(rotation->z);
-    double cb = cos(rotation->y);
-    double ca = cos(rotation->x);
-    double sg = sin(rotation->z);
-    double sb = sin(rotation->y);
-    double sa = sin(rotation->x);
-
-    rotation_matrix[0][0] = cb * cg;
-    rotation_matrix[0][1] = sa * sb * cg - ca * sg;
-    rotation_matrix[0][2] = ca * sb * cg + sa * sg;
-    rotation_matrix[1][0] = cb * sg;
-    rotation_matrix[1][1] = sa * sb * sg + ca * cg;
-    rotation_matrix[1][2] = ca * sb * sg - sa * cg;
-    rotation_matrix[2][0] = -sb;
-    rotation_matrix[2][1] = sa * cb;
-    rotation_matrix[2][2] = ca * cb;
+void Vector3D_divide(Vector3D *vector, double divisor) {
+    vector->x /= divisor;
+    vector->y /= divisor;
+    vector->z /= divisor;
 }
 
 void Vector3D_rotate(Vector3D *vector, double rotation_matrix[3][3]) {
@@ -72,6 +53,15 @@ void Vector3D_between(const Vector3D *start, const Vector3D *end, double fractio
     Vector3D_subtract(end, start, result);
     Vector3D_multiply(result, fraction);
     Vector3D_add(start, result, result);
+}
+
+void Vector3D_normalize(Vector3D *vector) {
+    Vector3D_divide(vector, Vector3D_magnitude(vector));
+}
+
+void Vector3D_direction(const Vector3D *start, const Vector3D *end, Vector3D *direction) {
+    Vector3D_subtract(end, start, direction);
+    Vector3D_normalize(direction);
 }
 
 double Vector3D_dot(const Vector3D *vector_a, const Vector3D *vector_b) {

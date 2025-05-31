@@ -62,8 +62,12 @@ Wing *Wing_construct(int naca_m,
                      double leading_edge_sweep_angle,
                      double trailing_edge_sweep_angle);
 
+void Wing_free(Wing *wing);
 void Wing_compute_surface_points(Wing *wing);
-void Wing_destruct(Wing *wing);
-void Wing_write_points_to_vtk(Wing *wing, Geometry geometry, const char *file_path);
+void Wing_compute_surface_vectors(Wing *wing);
+void Wing_print_attributes(const Wing *wing);
+void Wing_write_points_to_vtk(const Wing *wing, Geometry geometry, const char *file_path);
+void Wing_get_corners(const Wing *wing, Geometry geometry, int i, int j, Vector3D **corners);
+Vector3D *Wing_get_points(const Wing *wing, Geometry geometry, int *num_rows, int *num_cols);
 
 #endif
