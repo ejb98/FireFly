@@ -14,10 +14,11 @@ void Vector3D_subtract(const Vector3D *vector_a, const Vector3D *vector_b, Vecto
 void Vector3D_divide(Vector3D *vector, double divisor);
 void Vector3D_normalize(Vector3D *vector);
 void Vector3D_multiply(Vector3D *vector, double multiplier);
-void Vector3D_rotate(Vector3D *vector, double rotation_matrix[3][3]);
+void Vector3D_rotate(Vector3D *vector, double (*rotation_matrix)[3]);
 void Vector3D_cross(const Vector3D *vector_a, const Vector3D *vector_b, Vector3D *product);
-void Vector3D_between(const Vector3D *start, const Vector3D *end, double fraction, Vector3D *result);
+void Vector3D_lerp(const Vector3D *start, const Vector3D *end, double fraction, Vector3D *result);
 void Vector3D_direction(const Vector3D *start, const Vector3D *end, Vector3D *direction);
+double Vector3D_distance(const Vector3D *start, const Vector3D *end);
 double Vector3D_dot(const Vector3D *vector_a, const Vector3D *vector_b);
 double Vector3D_magnitude(const Vector3D *vector);
 Vector3D *Vector3D_malloc(size_t num_elements);

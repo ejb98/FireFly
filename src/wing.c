@@ -51,6 +51,7 @@ Wing *Wing_construct(int naca_m,
 
     wing->semi_span = semi_span;
     wing->root_chord = root_chord;
+    wing->surface_area = 0.0;
     wing->cutoff_radius = cutoff_radius;
     wing->angle_of_attack = angle_of_attack;
     wing->starting_vortex_offset = starting_vortex_offset;
@@ -60,6 +61,7 @@ Wing *Wing_construct(int naca_m,
     wing->pressures = allocate_doubles(num_panels);
     wing->a_wing_on_wing = allocate_doubles(num_panels * num_panels);
     wing->b_wing_on_wing = allocate_doubles(num_panels * num_panels);
+    wing->surface_areas = allocate_doubles(num_panels);
     wing->right_hand_side = allocate_doubles(num_panels);
     wing->wake_vortex_strengths = allocate_doubles(max_num_wake_rings);
     wing->bound_vortex_strengths = allocate_doubles(num_panels);
@@ -85,6 +87,7 @@ Wing *Wing_construct(int naca_m,
 
     Wing_compute_surface_points(wing);
     Wing_compute_surface_vectors(wing);
+    Wing_compute_surface_areas(wing);
     Wing_compute_control_points(wing);
     Wing_compute_bound_ring_points(wing);
 
@@ -97,6 +100,7 @@ void Wing_free(Wing *wing) {
     free(wing->pressures);
     free(wing->a_wing_on_wing);
     free(wing->b_wing_on_wing);
+    free(wing->surface_areas);
     free(wing->right_hand_side);
     free(wing->wake_vortex_strengths);
     free(wing->bound_vortex_strengths);
@@ -122,6 +126,7 @@ void Wing_print_attributes(const Wing *wing) {
     printf("Root Chord: %.2f m\n", wing->root_chord);
     printf("Leading Edge Sweep Angle: %.2f deg\n", wing->leading_edge_sweep_angle);
     printf("Trailing Edge Sweep Angle: %.2f deg\n", wing->trailing_edge_sweep_angle);
+    printf("Surface Area: %.2f sq. m\n", wing->surface_area);
     printf("Angle of Attack: %.2f deg\n", wing->angle_of_attack);
     printf("Airfoil: NACA %d%dXX\n", wing->naca_m, wing->naca_p);
     printf("Spanwise Panels: %d\n", wing->num_spanwise_panels);
@@ -328,10 +333,10 @@ void Wing_compute_surface_vectors(Wing *wing) {
             ipanel = sub2ind(i, j, wing->num_spanwise_panels);
             normal = wing->normal_vectors + ipanel;
             Wing_get_corners(wing, SURFACE_POINTS, i, j, corners);
-            Vector3D_between(corners[0], corners[3], 0.5, &left);
-            Vector3D_between(corners[2], corners[3], 0.5, &back);
-            Vector3D_between(corners[0], corners[1], 0.5, &front);
-            Vector3D_between(corners[1], corners[2], 0.5, &right);
+            Vector3D_lerp(corners[0], corners[3], 0.5, &left);
+            Vector3D_lerp(corners[2], corners[3], 0.5, &back);
+            Vector3D_lerp(corners[0], corners[1], 0.5, &front);
+            Vector3D_lerp(corners[1], corners[2], 0.5, &right);
             Vector3D_subtract(corners[2], corners[0], &vectora);
             Vector3D_subtract(corners[1], corners[3], &vectorb);
             Vector3D_cross(&vectora, &vectorb, normal);
@@ -352,9 +357,33 @@ void Wing_compute_control_points(Wing *wing) {
         for (int j = 0; j < wing->num_spanwise_panels; j++) {
             ipanel = sub2ind(i, j, wing->num_spanwise_panels);
             Wing_get_corners(wing, SURFACE_POINTS, i, j, corners);
-            Vector3D_between(corners[0], corners[3], 0.75, &left);
-            Vector3D_between(corners[1], corners[2], 0.75, &right);
-            Vector3D_between(&left, &right, 0.5, wing->control_points + ipanel);
+            Vector3D_lerp(corners[0], corners[3], 0.75, &left);
+            Vector3D_lerp(corners[1], corners[2], 0.75, &right);
+            Vector3D_lerp(&left, &right, 0.5, wing->control_points + ipanel);
+        }
+    }
+}
+
+void Wing_compute_surface_areas(Wing *wing) {
+    size_t ipanel;
+    Vector3D *corners[4];
+
+    double a1, a2, b1, b2;
+
+    wing->surface_area = 0.0;
+
+    for (int i = 0; i < wing->num_chordwise_panels; i++) {
+        for (int j = 0; j < wing->num_spanwise_panels; j++) {
+            ipanel = sub2ind(i, j, wing->num_spanwise_panels);
+            Wing_get_corners(wing, SURFACE_POINTS, i, j, corners);
+
+            a1 = Vector3D_distance(corners[0], corners[1]);
+            b1 = Vector3D_distance(corners[1], corners[2]);
+            a2 = Vector3D_distance(corners[2], corners[3]);
+            b2 = Vector3D_distance(corners[3], corners[0]);
+
+            wing->surface_areas[ipanel] = 0.5 * (a1 * b1 + a2 * b2);
+            wing->surface_area += wing->surface_areas[ipanel];
         }
     }
 }
@@ -379,7 +408,7 @@ void Wing_compute_bound_ring_points(Wing *wing) {
                 wing->bound_ring_points[ipoint].z = point->z;
             } else {
                 next = wing->surface_points + sub2ind(i + 1, j, num_cols);
-                Vector3D_between(point, next, 0.25, wing->bound_ring_points + ipoint);
+                Vector3D_lerp(point, next, 0.25, wing->bound_ring_points + ipoint);
             }
         }
     }

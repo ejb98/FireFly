@@ -16,6 +16,7 @@ typedef struct Wing {
 
     double semi_span;
     double root_chord;
+    double surface_area;
     double cutoff_radius;
     double angle_of_attack;
     double starting_vortex_offset;
@@ -25,6 +26,7 @@ typedef struct Wing {
     double *pressures;
     double *a_wing_on_wing;
     double *b_wing_on_wing;
+    double *surface_areas;
     double *right_hand_side;
     double *wake_vortex_strengths;
     double *bound_vortex_strengths;
@@ -65,6 +67,7 @@ Wing *Wing_construct(int naca_m,
 void Wing_free(Wing *wing);
 void Wing_compute_surface_points(Wing *wing);
 void Wing_compute_surface_vectors(Wing *wing);
+void Wing_compute_surface_areas(Wing *wing);
 void Wing_compute_bound_ring_points(Wing *wing);
 void Wing_compute_control_points(Wing *wing);
 void Wing_print_attributes(const Wing *wing);

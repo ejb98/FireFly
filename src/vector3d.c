@@ -29,7 +29,7 @@ void Vector3D_divide(Vector3D *vector, double divisor) {
     vector->z /= divisor;
 }
 
-void Vector3D_rotate(Vector3D *vector, double rotation_matrix[3][3]) {
+void Vector3D_rotate(Vector3D *vector, double (*rotation_matrix)[3]) {
     vector->x = rotation_matrix[0][0] * (vector->x) + 
                 rotation_matrix[0][1] * (vector->y) + 
                 rotation_matrix[0][2] * (vector->z);
@@ -49,7 +49,7 @@ void Vector3D_cross(const Vector3D *vector_a, const Vector3D *vector_b, Vector3D
     product->z = vector_a->x * vector_b->y - vector_a->y * vector_b->x;
 }
 
-void Vector3D_between(const Vector3D *start, const Vector3D *end, double fraction, Vector3D *result) {
+void Vector3D_lerp(const Vector3D *start, const Vector3D *end, double fraction, Vector3D *result) {
     Vector3D_subtract(end, start, result);
     Vector3D_multiply(result, fraction);
     Vector3D_add(start, result, result);
@@ -72,6 +72,13 @@ double Vector3D_dot(const Vector3D *vector_a, const Vector3D *vector_b) {
 
 double Vector3D_magnitude(const Vector3D *vector) {
     return sqrt(Vector3D_dot(vector, vector));
+}
+
+double Vector3D_distance(const Vector3D *start, const Vector3D *end) {
+    Vector3D distance;
+    Vector3D_subtract(end, start, &distance);
+
+    return Vector3D_magnitude(&distance);
 }
 
 Vector3D *Vector3D_malloc(size_t num_elements) {
