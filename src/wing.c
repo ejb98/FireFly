@@ -38,7 +38,7 @@ Wing *Wing_construct(int naca_m,
     
     wing->naca_m = naca_m;
     wing->naca_p = naca_p;
-    wing->iteration = 0;
+    wing->iteration = -1;
     wing->num_time_steps = num_time_steps;
     wing->num_spanwise_panels = num_spanwise_panels;
     wing->num_chordwise_panels = num_chordwise_panels;
@@ -273,7 +273,11 @@ void Wing_write_points_to_vtk(const Wing *wing, Geometry geometry, const char *f
         return;
     }
 
-    snprintf(full_path, sizeof(full_path), "%s%s.vtk.%d", file_path, description, wing->iteration);
+    if (wing->iteration < 0) {
+        snprintf(full_path, sizeof(full_path), "%s%s.vtk", file_path, description);
+    } else {
+        snprintf(full_path, sizeof(full_path), "%s%s.vtk.%d", file_path, description, wing->iteration);
+    }
 
     FILE *file = fopen(full_path, "w");
 
