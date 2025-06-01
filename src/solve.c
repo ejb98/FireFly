@@ -52,7 +52,7 @@ void solve(Wing *wing) {
             wing->right_hand_side[i] = wing->normal_velocities[i];
 
             for (size_t j = 0; j < num_rings; j++) {
-                imatrix = sub2ind(i, j, num_rings);
+                imatrix = Sub2Ind(i, j, num_rings);
 
                 wing->right_hand_side[i] -= wing->a_wake_on_wing[imatrix] * wing->wake_vorticity[j];
             }

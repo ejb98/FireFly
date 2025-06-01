@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-double *allocate_doubles(size_t num_elements) {
+double *AllocateDoubles(size_t num_elements) {
     double *ptr = (double *) calloc(num_elements, sizeof(double));
 
     if (ptr == NULL) {
-        fprintf(stderr, "allocate_doubles: memory allocation for %zu elements returned NULL", num_elements);
+        fprintf(stderr, "AllocateDoubles: memory allocation for %zu elements returned NULL", num_elements);
     }
 
     return ptr;

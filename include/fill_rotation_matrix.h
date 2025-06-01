@@ -5,7 +5,7 @@
 
 #include "vector3d.h"
 
-void fill_rotation_matrix(const Vector3D *rotation, double (*rotation_matrix)[3]) {
+void FillRotationMatrix(const Vector3D *rotation, double (*rotation_matrix)[3]) {
     double cg = cos(rotation->z);
     double cb = cos(rotation->y);
     double ca = cos(rotation->x);

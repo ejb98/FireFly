@@ -38,16 +38,16 @@ void shed_wake(Wing *wing) {
     assign_rotation(rot_mat, &wing->rotation);
 
     for (int j = 0; j < wing->bound_rings.num_cols; j++) {
-        iring = sub2ind(wing->bound_rings.num_rows - 1, j, wing->bound_rings.num_cols);
-        iwake = sub2ind(0, j, wing->wake_rings.num_cols);
+        iring = Sub2Ind(wing->bound_rings.num_rows - 1, j, wing->bound_rings.num_cols);
+        iwake = Sub2Ind(0, j, wing->wake_rings.num_cols);
 
         mesh_to_vector(&wing->bound_rings, iring, &point);
         apply_rotation(rot_mat, &point);
 
         if (wing->iteration) {
             for (int i = wing->iteration; i > 0; i--) {
-                icurr = sub2ind(i, j, wing->wake_rings.num_cols);
-                iprev = sub2ind(i - 1, j, wing->wake_rings.num_cols);
+                icurr = Sub2Ind(i, j, wing->wake_rings.num_cols);
+                iprev = Sub2Ind(i - 1, j, wing->wake_rings.num_cols);
 
                 wing->wake_rings.x[icurr] = wing->wake_rings.x[iprev];
                 wing->wake_rings.y[icurr] = wing->wake_rings.y[iprev];
@@ -84,15 +84,15 @@ void shed_wake(Wing *wing) {
         for (int j = 0; j < wing->num_spanwise_panels; j++) {
             if (wing->wake_rings.num_rows > 2) {
                 for (int i = wing->wake_rings.num_rows - 2; i > 0; i--) {
-                    icurr = sub2ind(i, j, wing->num_spanwise_panels);
-                    iprev = sub2ind(i - 1, j, wing->num_spanwise_panels);
+                    icurr = Sub2Ind(i, j, wing->num_spanwise_panels);
+                    iprev = Sub2Ind(i - 1, j, wing->num_spanwise_panels);
 
                     wing->wake_vorticity[icurr] = wing->wake_vorticity[iprev];
                 }
             }
 
-            iwing = sub2ind(wing->num_chordwise_panels - 1, j, wing->num_spanwise_panels);
-            iwake = sub2ind(0, j, wing->num_spanwise_panels);
+            iwing = Sub2Ind(wing->num_chordwise_panels - 1, j, wing->num_spanwise_panels);
+            iwake = Sub2Ind(0, j, wing->num_spanwise_panels);
 
             wing->wake_vorticity[iwake] = wing->bound_vorticity[iwing];
         }

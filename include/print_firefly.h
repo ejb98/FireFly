@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-void print_firefly() {
+void PrintFireFly() {
     printf(" _____  ___  ____   _____  _____  _     __   __\n");
     printf("|  ___||_ _||  _ \\ | ____||  ___|| |    \\ \\ / /\n");
     printf("| |_    | | | |_) ||  _|  | |_   | |     \\ V /\n");

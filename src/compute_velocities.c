@@ -28,7 +28,7 @@ void compute_velocities(Wing *wing, double delta_time) {
 
     for (int j = 0; j < wing->num_spanwise_panels; j++) {
         for (int i = 0; i < wing->num_chordwise_panels; i++) {
-            ipoint = sub2ind(i, j, wing->num_spanwise_panels);
+            ipoint = Sub2Ind(i, j, wing->num_spanwise_panels);
 
             mesh_to_vector(&wing->control_points, ipoint, &curr);
 

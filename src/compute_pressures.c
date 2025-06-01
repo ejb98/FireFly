@@ -43,7 +43,7 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
     for (int j = 0; j < wing->num_spanwise_panels; j++) {
 
         for (int i = 0; i < wing->num_chordwise_panels; i++) {
-            ivortex = sub2ind(i, j, wing->num_spanwise_panels);
+            ivortex = Sub2Ind(i, j, wing->num_spanwise_panels);
 
             assign_corners(&wing->surface_panels, i, j, corners);
             subtract(corners + 1, corners, &front);
@@ -62,13 +62,13 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
             gamma = wing->bound_vorticity[ivortex];
 
             if (i) {
-                gamma_previ = wing->bound_vorticity[sub2ind(i - 1, j, wing->num_spanwise_panels)];
+                gamma_previ = wing->bound_vorticity[Sub2Ind(i - 1, j, wing->num_spanwise_panels)];
             } else {
                 gamma_previ = 0.0;
             }
 
             if (j) {
-                gamma_prevj = wing->bound_vorticity[sub2ind(i, j - 1, wing->num_spanwise_panels)];
+                gamma_prevj = wing->bound_vorticity[Sub2Ind(i, j - 1, wing->num_spanwise_panels)];
             } else {
                 gamma_prevj = 0.0;
             }

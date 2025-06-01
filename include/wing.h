@@ -51,7 +51,7 @@ typedef struct Wing {
     Vector3D *horizontal_velocity_buffer;
 } Wing;
 
-Wing *Wing_construct(int naca_m,
+Wing *Wing_Construct(int naca_m,
                      int naca_p,
                      int num_time_steps,
                      int num_spanwise_panels,
@@ -64,15 +64,15 @@ Wing *Wing_construct(int naca_m,
                      double leading_edge_sweep_angle,
                      double trailing_edge_sweep_angle);
 
-void Wing_free(Wing *wing);
-void Wing_compute_surface_points(Wing *wing);
-void Wing_compute_surface_vectors(Wing *wing);
-void Wing_compute_surface_areas(Wing *wing);
-void Wing_compute_bound_ring_points(Wing *wing);
-void Wing_compute_control_points(Wing *wing);
-void Wing_print_attributes(const Wing *wing);
-void Wing_write_points_to_vtk(const Wing *wing, Geometry geometry, const char *file_path);
-void Wing_get_corners(const Wing *wing, Geometry geometry, int i, int j, Vector3D **corners);
-Vector3D *Wing_get_points(const Wing *wing, Geometry geometry, int *num_rows, int *num_cols);
+void Wing_Deallocate(Wing *wing);
+void Wing_ComputeSurfacePoints(Wing *wing);
+void Wing_ComputeSurfaceVectors(Wing *wing);
+void Wing_ComputeSurfaceAreas(Wing *wing);
+void Wing_ComputeBoundRingPoints(Wing *wing);
+void Wing_ComputeControlPoints(Wing *wing);
+void Wing_PrintAttributes(const Wing *wing);
+void Wing_WritePointstoVTK(const Wing *wing, Geometry geometry, const char *file_path);
+void Wing_GetCorners(const Wing *wing, Geometry geometry, int i, int j, Vector3D **corners);
+Vector3D *Wing_GetPoints(const Wing *wing, Geometry geometry, int *num_rows, int *num_cols);
 
 #endif

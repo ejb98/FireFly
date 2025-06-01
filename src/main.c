@@ -26,7 +26,7 @@
 #define NUM_CHORDWISE_PANELS 4
 
 int main(int argc, char **argv) {
-    print_firefly();
+    PrintFireFly();
 
     clock_t last;
     clock_t start;
@@ -39,13 +39,13 @@ int main(int argc, char **argv) {
     double dt = dx / FAR_FIELD_VELOCITY / 4.0;
     double dx_wake = 0.3 * FAR_FIELD_VELOCITY * dt;
 
-    Wing *wing = Wing_construct(NACA_M, NACA_P, NUM_TIME_STEPS, NUM_SPANWISE_PANELS,
+    Wing *wing = Wing_Construct(NACA_M, NACA_P, NUM_TIME_STEPS, NUM_SPANWISE_PANELS,
                                 NUM_CHORDWISE_PANELS, SEMI_SPAN, ROOT_CHORD, CUTOFF,
                                 ANGLE_OF_ATTACK, dx_wake, LEADING_SWEEP, TRAILING_SWEEP);
     
-    Wing_write_points_to_vtk(wing, SURFACE_POINTS, "results\\");                     
-    Wing_write_points_to_vtk(wing, CONTROL_POINTS, "results\\");                     
-    Wing_write_points_to_vtk(wing, BOUND_RING_POINTS, "results\\");                     
+    Wing_WritePointstoVTK(wing, SURFACE_POINTS, "results\\");                     
+    Wing_WritePointstoVTK(wing, CONTROL_POINTS, "results\\");                     
+    Wing_WritePointstoVTK(wing, BOUND_RING_POINTS, "results\\");                     
 
     last = clock();
 
@@ -66,10 +66,10 @@ int main(int argc, char **argv) {
     }
 
     putchar('\n');
-    Wing_print_attributes(wing);
+    Wing_PrintAttributes(wing);
     printf("Elapsed Time: %.2f sec\n", ((double) (current - start)) / CLOCKS_PER_SEC);
 
-    Wing_free(wing);
+    Wing_Deallocate(wing);
 
     return 0;
 }

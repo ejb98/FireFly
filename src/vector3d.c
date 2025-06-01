@@ -5,31 +5,31 @@
 
 #include "vector3d.h"
 
-void Vector3D_add(const Vector3D *vector_a, const Vector3D *vector_b, Vector3D *sum) {
+void Vector3D_Add(const Vector3D *vector_a, const Vector3D *vector_b, Vector3D *sum) {
     sum->x = vector_a->x + vector_b->x;
     sum->y = vector_a->y + vector_b->y;
     sum->z = vector_a->z + vector_b->z;
 }
 
-void Vector3D_subtract(const Vector3D *vector_a, const Vector3D *vector_b, Vector3D *difference) {
+void Vector3D_Subtract(const Vector3D *vector_a, const Vector3D *vector_b, Vector3D *difference) {
     difference->x = vector_a->x - vector_b->x;
     difference->y = vector_a->y - vector_b->y;
     difference->z = vector_a->z - vector_b->z;
 }
 
-void Vector3D_multiply(Vector3D *vector, double multiplier) {
+void Vector3D_Multiply(Vector3D *vector, double multiplier) {
     vector->x *= multiplier;
     vector->y *= multiplier;
     vector->z *= multiplier;
 }
 
-void Vector3D_divide(Vector3D *vector, double divisor) {
+void Vector3D_Divide(Vector3D *vector, double divisor) {
     vector->x /= divisor;
     vector->y /= divisor;
     vector->z /= divisor;
 }
 
-void Vector3D_rotate(Vector3D *vector, double (*rotation_matrix)[3]) {
+void Vector3D_Rotate(Vector3D *vector, double (*rotation_matrix)[3]) {
     vector->x = rotation_matrix[0][0] * (vector->x) + 
                 rotation_matrix[0][1] * (vector->y) + 
                 rotation_matrix[0][2] * (vector->z);
@@ -43,49 +43,49 @@ void Vector3D_rotate(Vector3D *vector, double (*rotation_matrix)[3]) {
                 rotation_matrix[2][2] * (vector->z);
 }
 
-void Vector3D_cross(const Vector3D *vector_a, const Vector3D *vector_b, Vector3D *product) {
+void Vector3D_Cross(const Vector3D *vector_a, const Vector3D *vector_b, Vector3D *product) {
     product->x = vector_a->y * vector_b->z - vector_a->z * vector_b->y;
     product->y = vector_a->z * vector_b->x - vector_a->x * vector_b->z;
     product->z = vector_a->x * vector_b->y - vector_a->y * vector_b->x;
 }
 
-void Vector3D_lerp(const Vector3D *start, const Vector3D *end, double fraction, Vector3D *result) {
-    Vector3D_subtract(end, start, result);
-    Vector3D_multiply(result, fraction);
-    Vector3D_add(start, result, result);
+void Vector3D_Lerp(const Vector3D *start, const Vector3D *end, double fraction, Vector3D *result) {
+    Vector3D_Subtract(end, start, result);
+    Vector3D_Multiply(result, fraction);
+    Vector3D_Add(start, result, result);
 }
 
-void Vector3D_normalize(Vector3D *vector) {
-    Vector3D_divide(vector, Vector3D_magnitude(vector));
+void Vector3D_Normalize(Vector3D *vector) {
+    Vector3D_Divide(vector, Vector3D_Magnitude(vector));
 }
 
-void Vector3D_direction(const Vector3D *start, const Vector3D *end, Vector3D *direction) {
-    Vector3D_subtract(end, start, direction);
-    Vector3D_normalize(direction);
+void Vector3D_Direction(const Vector3D *start, const Vector3D *end, Vector3D *direction) {
+    Vector3D_Subtract(end, start, direction);
+    Vector3D_Normalize(direction);
 }
 
-double Vector3D_dot(const Vector3D *vector_a, const Vector3D *vector_b) {
+double Vector3D_Dot(const Vector3D *vector_a, const Vector3D *vector_b) {
     return vector_a->x * vector_b->x + 
            vector_a->y * vector_b->y + 
            vector_a->z * vector_b->z;
 }
 
-double Vector3D_magnitude(const Vector3D *vector) {
-    return sqrt(Vector3D_dot(vector, vector));
+double Vector3D_Magnitude(const Vector3D *vector) {
+    return sqrt(Vector3D_Dot(vector, vector));
 }
 
-double Vector3D_distance(const Vector3D *start, const Vector3D *end) {
+double Vector3D_Distance(const Vector3D *start, const Vector3D *end) {
     Vector3D distance;
-    Vector3D_subtract(end, start, &distance);
+    Vector3D_Subtract(end, start, &distance);
 
-    return Vector3D_magnitude(&distance);
+    return Vector3D_Magnitude(&distance);
 }
 
-Vector3D *Vector3D_malloc(size_t num_elements) {
+Vector3D *Vector3D_Allocate(size_t num_elements) {
     Vector3D *ptr = (Vector3D *) malloc(sizeof(Vector3D) * num_elements);
 
     if (ptr == NULL) {
-        fprintf(stderr, "Vector3D_malloc: malloc returned NULL for %zu elements", num_elements);
+        fprintf(stderr, "Vector3D_Allocate: malloc returned NULL for %zu elements", num_elements);
     }
 
     return ptr;
