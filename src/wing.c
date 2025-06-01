@@ -10,18 +10,8 @@
 #include "allocate_doubles.h"
 #include "fill_rotation_matrix.h"
 
-Wing *Wing_Construct(int naca_m,
-                     int naca_p,
-                     int num_time_steps,
-                     int num_spanwise_panels,
-                     int num_chordwise_panels,
-                     double semi_span,
-                     double root_chord,
-                     double cutoff_radius,
-                     double angle_of_attack,
-                     double starting_vortex_offset,
-                     double leading_edge_sweep_angle,
-                     double trailing_edge_sweep_angle) {
+Wing *Wing_Construct(const WingProperties *wing_properties, int num_time_steps,
+                     double starting_vortex_offset, double cutoff_radius) {
 
     Wing *wing = (Wing *) malloc(sizeof(Wing));
 
@@ -31,13 +21,15 @@ Wing *Wing_Construct(int naca_m,
 
     Vector3D zeros = {0.0, 0.0, 0.0};
 
+    size_t num_spanwise_panels = wing_properties->num_spanwise_panels;
+    size_t num_chordwise_panels = wing_properties->num_chordwise_panels;
     size_t num_panels = num_spanwise_panels * num_chordwise_panels;
     size_t num_points = (num_spanwise_panels + 1) * (num_chordwise_panels + 1);
     size_t max_num_wake_rings = (num_time_steps - 1) * num_spanwise_panels;
     size_t max_num_wake_points = num_time_steps * (num_spanwise_panels + 1);
     
-    wing->naca_m = naca_m;
-    wing->naca_p = naca_p;
+    wing->naca_m = wing_properties->naca_m;
+    wing->naca_p = wing_properties->naca_p;
     wing->iteration = -1;
     wing->num_time_steps = num_time_steps;
     wing->geometry_changed = 0;
@@ -52,14 +44,14 @@ Wing *Wing_Construct(int naca_m,
 
     wing->num_control_points = num_panels;
 
-    wing->semi_span = semi_span;
-    wing->root_chord = root_chord;
+    wing->semi_span = wing_properties->semi_span;
+    wing->root_chord = wing_properties->root_chord;
     wing->surface_area = 0.0;
     wing->cutoff_radius = cutoff_radius;
-    wing->angle_of_attack = angle_of_attack;
+    wing->angle_of_attack = wing_properties->angle_of_attack;
     wing->starting_vortex_offset = starting_vortex_offset;
-    wing->leading_edge_sweep_angle = leading_edge_sweep_angle;
-    wing->trailing_edge_sweep_angle = trailing_edge_sweep_angle;
+    wing->leading_edge_sweep_angle = wing_properties->leading_edge_sweep_angle;
+    wing->trailing_edge_sweep_angle = wing_properties->trailing_edge_sweep_angle;
 
     wing->pressures = AllocateDoubles(num_panels);
     wing->a_wing_on_wing = AllocateDoubles(num_panels * num_panels);

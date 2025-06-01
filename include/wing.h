@@ -55,18 +55,17 @@ typedef struct Wing {
     Vector3D *horizontal_velocity_buffer;
 } Wing;
 
-Wing *Wing_Construct(int naca_m,
-                     int naca_p,
-                     int num_time_steps,
-                     int num_spanwise_panels,
-                     int num_chordwise_panels,
-                     double semi_span,
-                     double root_chord,
-                     double cutoff_radius,
-                     double angle_of_attack,
-                     double starting_vortex_offset,
-                     double leading_edge_sweep_angle,
-                     double trailing_edge_sweep_angle);
+typedef struct WingProperties {
+    int naca_m;
+    int naca_p;
+    int num_spanwise_panels;
+    int num_chordwise_panels;
+    double semi_span;
+    double root_chord;
+    double angle_of_attack;
+    double leading_edge_sweep_angle;
+    double trailing_edge_sweep_angle;
+} WingProperties;
 
 void Wing_Deallocate(Wing *wing);
 void Wing_ComputeSurfacePoints(Wing *wing);
@@ -80,5 +79,7 @@ void Wing_WritePoints2VTK(const Wing *wing, Geometry geometry, const char *file_
 void Wing_GetCorners(const Wing *wing, Geometry geometry, int i, int j, Vector3D **corners);
 void Wing_Process(Wing *wing, double delta_time);
 Vector3D *Wing_GetPoints(const Wing *wing, Geometry geometry, int *num_rows, int *num_cols);
-
+Wing *Wing_Construct(const WingProperties *wing_properties, int num_time_steps,
+                     double starting_vortex_offset, double cutoff_radius);
+                     
 #endif

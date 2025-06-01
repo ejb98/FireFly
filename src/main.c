@@ -38,10 +38,17 @@ int main(int argc, char **argv) {
     double dx = ROOT_CHORD / NUM_CHORDWISE_PANELS;
     double dt = dx / FAR_FIELD_VELOCITY / 4.0;
     double dx_wake = 0.3 * FAR_FIELD_VELOCITY * dt;
+    double elapsed_time;
 
-    Wing *wing = Wing_Construct(NACA_M, NACA_P, NUM_TIME_STEPS, NUM_SPANWISE_PANELS,
-                                NUM_CHORDWISE_PANELS, SEMI_SPAN, ROOT_CHORD, CUTOFF,
-                                ANGLE_OF_ATTACK, dx_wake, LEADING_SWEEP, TRAILING_SWEEP);
+    WingProperties props = {.naca_m = NACA_M, .naca_p = NACA_P,
+                            .num_chordwise_panels = NUM_CHORDWISE_PANELS,
+                            .num_spanwise_panels = NUM_SPANWISE_PANELS,
+                            .semi_span = SEMI_SPAN, .root_chord = ROOT_CHORD,
+                            .angle_of_attack = ANGLE_OF_ATTACK,
+                            .leading_edge_sweep_angle = LEADING_SWEEP,
+                            .trailing_edge_sweep_angle = TRAILING_SWEEP};
+
+    Wing *wing = Wing_Construct(&props, NUM_TIME_STEPS, dx_wake, CUTOFF);
     
     Wing_WritePoints2VTK(wing, SURFACE_POINTS, "results\\");                     
     Wing_WritePoints2VTK(wing, CONTROL_POINTS, "results\\");                     
@@ -61,16 +68,18 @@ int main(int argc, char **argv) {
         Wing_Process(wing, dt);
 
         current = clock();
+        elapsed_time = ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC;
 
-        printf("completed in %.0f msec...%f m/s\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC,
-            wing->kinematic_velocities[0].x);
+        printf("completed in %.0f msec\n", elapsed_time);
 
         last = current;
     }
 
     putchar('\n');
     Wing_PrintAttributes(wing);
-    printf("Elapsed Time: %.2f sec\n", ((double) (current - start)) / CLOCKS_PER_SEC);
+
+    elapsed_time = ((double) (current - start)) / CLOCKS_PER_SEC;
+    printf("Elapsed Time: %.2f sec\n", elapsed_time);
 
     Wing_Deallocate(wing);
 
