@@ -17,9 +17,9 @@
 #define TRAILING_SWEEP 90.0
 #define NUM_TIME_STEPS 160
 #define ANGLE_OF_ATTACK 5.0
-#define HEAVING_FREQUENCY 2.0
+#define HEAVING_FREQUENCY 0.0
 #define HEAVING_AMPLITUDE 0.0
-#define PITCHING_FREQUENCY 2.0
+#define PITCHING_FREQUENCY 0.0
 #define PITCHING_AMPLITUDE 0.0
 #define FAR_FIELD_VELOCITY 10.0
 #define NUM_SPANWISE_PANELS 13
@@ -58,9 +58,12 @@ int main(int argc, char **argv) {
         wing->position.z = HEAVING_AMPLITUDE * sin(2.0 * PI * HEAVING_FREQUENCY * t);
         wing->rotation.y = PITCHING_AMPLITUDE * sin(2.0 * PI * PITCHING_FREQUENCY * t) * PI / 180.0;
 
+        Wing_Process(wing, dt);
+
         current = clock();
 
-        printf("completed in %.0f msec...\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC);
+        printf("completed in %.0f msec...%f m/s\n", ((double) (current - last)) * 1000.0 / CLOCKS_PER_SEC,
+            wing->kinematic_velocities[0].x);
 
         last = current;
     }

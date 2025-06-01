@@ -40,6 +40,7 @@ Wing *Wing_Construct(int naca_m,
     wing->naca_p = naca_p;
     wing->iteration = -1;
     wing->num_time_steps = num_time_steps;
+    wing->geometry_changed = 0;
     wing->num_spanwise_panels = num_spanwise_panels;
     wing->num_chordwise_panels = num_chordwise_panels;
 
@@ -48,6 +49,8 @@ Wing *Wing_Construct(int naca_m,
     if (wing->pivot_vector == NULL) {
         fprintf(stderr, "Wing_Construct: malloc returned NULL for pivot_vector");
     }
+
+    wing->num_control_points = num_panels;
 
     wing->semi_span = semi_span;
     wing->root_chord = root_chord;
@@ -79,6 +82,7 @@ Wing *Wing_Construct(int naca_m,
     wing->wake_ring_points = Vector3D_Allocate(max_num_wake_points);
     wing->bound_ring_points = Vector3D_Allocate(num_points);
     wing->kinematic_velocities = Vector3D_Allocate(num_panels);
+    wing->previous_control_points = Vector3D_Allocate(num_panels);
     wing->wake_induced_velocities = Vector3D_Allocate(num_panels * max_num_wake_rings);
     wing->wake_point_displacements = Vector3D_Allocate(max_num_wake_points);
     wing->spanwise_tangent_vectors = Vector3D_Allocate(num_panels);
@@ -112,6 +116,7 @@ void Wing_Deallocate(Wing *wing) {
     free(wing->wake_ring_points);
     free(wing->bound_ring_points);
     free(wing->kinematic_velocities);
+    free(wing->previous_control_points);
     free(wing->wake_induced_velocities);
     free(wing->wake_point_displacements);
     free(wing->spanwise_tangent_vectors);
@@ -415,5 +420,59 @@ void Wing_ComputeBoundRingPoints(Wing *wing) {
                 Vector3D_Lerp(point, next, 0.25, wing->bound_ring_points + ipoint);
             }
         }
+    }
+}
+
+void Wing_Process(Wing *wing, double delta_time) {
+    wing->iteration++;
+
+    if (wing->iteration) {
+        Wing_ComputeKinematicVelocities(wing, delta_time);
+    }
+
+    // shed_wake(wing);
+    // solve(wing);
+
+    // if (wing->iteration) {
+    //     rollup_wake(wing, delta_time);
+    // }
+
+    wing->previous_position = wing->position;
+    wing->previous_rotation = wing->rotation;
+}
+
+void Wing_ComputeKinematicVelocities(Wing *wing, double delta_time) {
+    Vector3D inverse_rotation = {-wing->rotation.x, -wing->rotation.y, -wing->rotation.z};
+    
+    double rotation_matrix[3][3];
+    double inverse_rotation_matrix[3][3];
+    double previous_rotation_matrix[3][3];
+
+    FillRotationMatrix(&wing->rotation, rotation_matrix);
+    FillRotationMatrix(&inverse_rotation, inverse_rotation_matrix);
+    FillRotationMatrix(&wing->previous_rotation, previous_rotation_matrix);
+
+    Vector3D *current;
+    Vector3D *previous;
+    Vector3D *velocity;
+
+    for (size_t i = 0; i < wing->num_control_points; i++) {
+        current = wing->control_points + i;
+        previous = wing->previous_control_points + i;
+        velocity = wing->kinematic_velocities + i;
+
+        Vector3D_Rotate(current, rotation_matrix);
+        Vector3D_Rotate(previous, previous_rotation_matrix);
+
+        Vector3D_Add(current, &wing->position, current);
+        Vector3D_Add(previous, &wing->previous_position, previous);
+
+        Vector3D_Subtract(current, previous, velocity);
+        Vector3D_Divide(velocity, delta_time);
+
+        Vector3D_Subtract(current, &wing->position, current);
+        Vector3D_Rotate(current, inverse_rotation_matrix);
+
+        *previous = *current;
     }
 }

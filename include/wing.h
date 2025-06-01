@@ -9,10 +9,13 @@ typedef struct Wing {
     int naca_p;
     int iteration;
     int num_time_steps;
+    int geometry_changed;
     int num_spanwise_panels;
     int num_chordwise_panels;
 
     int *pivot_vector;
+
+    size_t num_control_points;
 
     double semi_span;
     double root_chord;
@@ -44,6 +47,7 @@ typedef struct Wing {
     Vector3D *wake_ring_points;
     Vector3D *bound_ring_points;
     Vector3D *kinematic_velocities;
+    Vector3D *previous_control_points;
     Vector3D *wake_induced_velocities;
     Vector3D *wake_point_displacements;
     Vector3D *spanwise_tangent_vectors;
@@ -68,11 +72,13 @@ void Wing_Deallocate(Wing *wing);
 void Wing_ComputeSurfacePoints(Wing *wing);
 void Wing_ComputeSurfaceVectors(Wing *wing);
 void Wing_ComputeSurfaceAreas(Wing *wing);
+void Wing_ComputeKinematicVelocities(Wing *wing, double delta_time);
 void Wing_ComputeBoundRingPoints(Wing *wing);
 void Wing_ComputeControlPoints(Wing *wing);
 void Wing_PrintAttributes(const Wing *wing);
 void Wing_WritePoints2VTK(const Wing *wing, Geometry geometry, const char *file_path);
 void Wing_GetCorners(const Wing *wing, Geometry geometry, int i, int j, Vector3D **corners);
+void Wing_Process(Wing *wing, double delta_time);
 Vector3D *Wing_GetPoints(const Wing *wing, Geometry geometry, int *num_rows, int *num_cols);
 
 #endif

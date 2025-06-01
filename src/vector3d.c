@@ -29,7 +29,7 @@ void Vector3D_Divide(Vector3D *vector, double divisor) {
     vector->z /= divisor;
 }
 
-void Vector3D_Rotate(Vector3D *vector, double (*rotation_matrix)[3]) {
+void Vector3D_Rotate(Vector3D *vector, const double (*rotation_matrix)[3]) {
     vector->x = rotation_matrix[0][0] * (vector->x) + 
                 rotation_matrix[0][1] * (vector->y) + 
                 rotation_matrix[0][2] * (vector->z);
