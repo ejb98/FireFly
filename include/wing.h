@@ -71,7 +71,7 @@ void Wing_ComputeSurfaceAreas(Wing *wing);
 void Wing_ComputeBoundRingPoints(Wing *wing);
 void Wing_ComputeControlPoints(Wing *wing);
 void Wing_PrintAttributes(const Wing *wing);
-void Wing_WritePointstoVTK(const Wing *wing, Geometry geometry, const char *file_path);
+void Wing_WritePoints2VTK(const Wing *wing, Geometry geometry, const char *file_path);
 void Wing_GetCorners(const Wing *wing, Geometry geometry, int i, int j, Vector3D **corners);
 Vector3D *Wing_GetPoints(const Wing *wing, Geometry geometry, int *num_rows, int *num_cols);
 

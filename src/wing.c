@@ -235,7 +235,7 @@ void Wing_GetCorners(const Wing *wing, Geometry geometry, int i, int j, Vector3D
     }
 }
 
-void Wing_WritePointstoVTK(const Wing *wing, Geometry geometry, const char *file_path) {
+void Wing_WritePoints2VTK(const Wing *wing, Geometry geometry, const char *file_path) {
     int num_rows;
     int num_cols;
 
@@ -262,13 +262,13 @@ void Wing_WritePointstoVTK(const Wing *wing, Geometry geometry, const char *file
     }
     
     if (num_rows < 2) {
-        fprintf(stderr, "Wing_WritePointstoVTK: points must have at least two rows");
+        fprintf(stderr, "Wing_WritePoints2VTK: points must have at least two rows");
 
         return;
     }
 
     if (num_cols < 2) {
-        fprintf(stderr, "Wing_WritePointstoVTK: points must have at least two columns");
+        fprintf(stderr, "Wing_WritePoints2VTK: points must have at least two columns");
 
         return;
     }
@@ -282,7 +282,7 @@ void Wing_WritePointstoVTK(const Wing *wing, Geometry geometry, const char *file
     FILE *file = fopen(full_path, "w");
 
     if (file == NULL) {
-        fprintf(stderr, "Wing_WritePointstoVTK: failed to open %s", full_path);
+        fprintf(stderr, "Wing_WritePoints2VTK: failed to open %s", full_path);
 
         return;
     }

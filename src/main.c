@@ -43,9 +43,9 @@ int main(int argc, char **argv) {
                                 NUM_CHORDWISE_PANELS, SEMI_SPAN, ROOT_CHORD, CUTOFF,
                                 ANGLE_OF_ATTACK, dx_wake, LEADING_SWEEP, TRAILING_SWEEP);
     
-    Wing_WritePointstoVTK(wing, SURFACE_POINTS, "results\\");                     
-    Wing_WritePointstoVTK(wing, CONTROL_POINTS, "results\\");                     
-    Wing_WritePointstoVTK(wing, BOUND_RING_POINTS, "results\\");                     
+    Wing_WritePoints2VTK(wing, SURFACE_POINTS, "results\\");                     
+    Wing_WritePoints2VTK(wing, CONTROL_POINTS, "results\\");                     
+    Wing_WritePoints2VTK(wing, BOUND_RING_POINTS, "results\\");                     
 
     last = clock();
 
