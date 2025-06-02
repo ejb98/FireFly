@@ -28,7 +28,7 @@ typedef struct Simulation {
     double *bound_vortex_strengths;
     double *last_bound_vortex_strengths;
 
-    Wing wing;
+    Wing *wing;
 
     Vector3D chordwise_velocity_buffer;
 
@@ -61,7 +61,7 @@ int Simulation_GetNumColumns(const Simulation* sim, Geometry geometry);
 size_t Simulation_GetNumPoints(const Simulation* sim, Geometry geometry);
 size_t Simulation_GetNumQuads(const Simulation* sim, Geometry geometry);
 Vector3D *Simulation_GetPoints(const Simulation *sim, Geometry geometry);
-Simulation *Simulation_Init(const Wing *wing, int num_time_steps, double delta_time,
+Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time,
                             double starting_vortex_offset, double cutoff_radius);
 
 #endif

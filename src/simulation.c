@@ -13,7 +13,7 @@
 #include "allocate_doubles.h"
 #include "fill_rotation_matrix.h"
 
-Simulation *Simulation_Init(const Wing *wing, int num_time_steps, double delta_time,
+Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time,
                             double starting_vortex_offset, double cutoff_radius) {
     Simulation *sim = (Simulation *) malloc(sizeof(Simulation));
 
@@ -57,7 +57,7 @@ Simulation *Simulation_Init(const Wing *wing, int num_time_steps, double delta_t
     sim->bound_vortex_strengths = AllocateDoubles(num_control_points);
     sim->last_bound_vortex_strengths = AllocateDoubles(num_control_points);
 
-    sim->wing = *wing;
+    sim->wing = wing;
 
     sim->chordwise_velocity_buffer = zeros;
 
@@ -119,26 +119,26 @@ void Simulation_ComputeSurfacePoints(Simulation *sim) {
     double leading_offset;
     double trailing_offset;
     double rotation_matrix[9];
-    double p = sim->wing.naca_p / 10.0;
-    double m = sim->wing.naca_m / 100.0;
-    double leading_tangent = tan((90.0 - sim->wing.leading_sweep_angle) * PI / 180.0);
-    double trailing_tangent = tan((90.0 - sim->wing.trailing_sweep_angle) * PI / 180.0);
+    double p = sim->wing->naca_p / 10.0;
+    double m = sim->wing->naca_m / 100.0;
+    double leading_tangent = tan((90.0 - sim->wing->leading_sweep_angle) * PI / 180.0);
+    double trailing_tangent = tan((90.0 - sim->wing->trailing_sweep_angle) * PI / 180.0);
 
-    Vector3D rotation = {0.0, sim->wing.angle_of_attack * PI / 180.0, 0.0};
+    Vector3D rotation = {0.0, sim->wing->angle_of_attack * PI / 180.0, 0.0};
     Vector3D *point;
 
     FillRotationMatrix(&rotation, rotation_matrix);
 
-    for (int j = 0; j < sim->wing.num_spanwise_panels + 1; j++) {
-        for (int i = 0; i < sim->wing.num_chordwise_panels + 1; i++) {
-            point = sim->surface_points + Sub2Ind(i, j, sim->wing.num_spanwise_panels + 1);
+    for (int j = 0; j < sim->wing->num_spanwise_panels + 1; j++) {
+        for (int i = 0; i < sim->wing->num_chordwise_panels + 1; i++) {
+            point = sim->surface_points + Sub2Ind(i, j, sim->wing->num_spanwise_panels + 1);
 
-            point->y = sim->wing.semi_span * j / sim->wing.num_spanwise_panels;
-            normalized_x = ((double) i) / sim->wing.num_chordwise_panels;
+            point->y = sim->wing->semi_span * j / sim->wing->num_spanwise_panels;
+            normalized_x = ((double) i) / sim->wing->num_chordwise_panels;
 
             constant = 2.0 * p * normalized_x - normalized_x * normalized_x;
 
-            if (normalized_x >= p || !sim->wing.naca_p) {
+            if (normalized_x >= p || !sim->wing->naca_p) {
                 normalized_z = (m / ((1.0 - p) * (1.0 - p))) * (1.0 - 2.0 * p + constant);
             } else {
                 normalized_z = (m / (p * p)) * constant;
@@ -147,7 +147,7 @@ void Simulation_ComputeSurfacePoints(Simulation *sim) {
             leading_offset = point->y * leading_tangent;
             trailing_offset = point->y * trailing_tangent;
 
-            local_chord = sim->wing.root_chord + trailing_offset - leading_offset;
+            local_chord = sim->wing->root_chord + trailing_offset - leading_offset;
 
             point->x = leading_offset + normalized_x * local_chord;
             point->z = local_chord * normalized_z;
@@ -168,9 +168,9 @@ void Simulation_ComputeSurfaceVectors(Simulation *sim) {
     Vector3D *normal;
     Vector3D *corners[4];
 
-    for (int i = 0; i < sim->wing.num_chordwise_panels; i++) {
-        for (int j = 0; j < sim->wing.num_spanwise_panels; j++) {
-            ipanel = Sub2Ind(i, j, sim->wing.num_spanwise_panels);
+    for (int i = 0; i < sim->wing->num_chordwise_panels; i++) {
+        for (int j = 0; j < sim->wing->num_spanwise_panels; j++) {
+            ipanel = Sub2Ind(i, j, sim->wing->num_spanwise_panels);
             normal = sim->normals + ipanel;
 
             Simulation_GetCorners(sim, SURFACE_POINTS, i, j, corners);
@@ -214,11 +214,11 @@ Vector3D *Simulation_GetPoints(const Simulation *sim, Geometry geometry) {
 int Simulation_GetNumRows(const Simulation* sim, Geometry geometry) {
     switch (geometry) {
         case CONTROL_POINTS:
-            return sim->wing.num_chordwise_panels;
+            return sim->wing->num_chordwise_panels;
 
         case SURFACE_POINTS:
         case BOUND_RING_POINTS:
-            return sim->wing.num_chordwise_panels + 1;
+            return sim->wing->num_chordwise_panels + 1;
 
         case WAKE_RING_POINTS:
             return sim->iteration + 1;
@@ -229,13 +229,13 @@ int Simulation_GetNumColumns(const Simulation* sim, Geometry geometry) {
     switch (geometry) {
         case SURFACE_POINTS:
         case BOUND_RING_POINTS:
-            return sim->wing.num_spanwise_panels + 1;
+            return sim->wing->num_spanwise_panels + 1;
 
         case CONTROL_POINTS:
-            return sim->wing.num_spanwise_panels;
+            return sim->wing->num_spanwise_panels;
 
         case WAKE_RING_POINTS:
-            return sim->iteration < 0 ? 0 : sim->wing.num_spanwise_panels + 1;
+            return sim->iteration < 0 ? 0 : sim->wing->num_spanwise_panels + 1;
     }
 }
 
@@ -353,9 +353,9 @@ void Simulation_ComputeControlPoints(Simulation *sim) {
     Vector3D right;
     Vector3D *corners[4];
 
-    for (int i = 0; i < sim->wing.num_chordwise_panels; i++) {
-        for (int j = 0; j < sim->wing.num_spanwise_panels; j++) {
-            ipanel = Sub2Ind(i, j, sim->wing.num_spanwise_panels);
+    for (int i = 0; i < sim->wing->num_chordwise_panels; i++) {
+        for (int j = 0; j < sim->wing->num_spanwise_panels; j++) {
+            ipanel = Sub2Ind(i, j, sim->wing->num_spanwise_panels);
 
             Simulation_GetCorners(sim, SURFACE_POINTS, i, j, corners);
             Vector3D_Lerp(corners[0], corners[3], 0.75, &left);
@@ -371,9 +371,9 @@ void Simulation_ComputeSurfaceAreas(Simulation *sim) {
 
     double a1, a2, b1, b2;
 
-    for (int i = 0; i < sim->wing.num_chordwise_panels; i++) {
-        for (int j = 0; j < sim->wing.num_spanwise_panels; j++) {
-            ipanel = Sub2Ind(i, j, sim->wing.num_spanwise_panels);
+    for (int i = 0; i < sim->wing->num_chordwise_panels; i++) {
+        for (int j = 0; j < sim->wing->num_spanwise_panels; j++) {
+            ipanel = Sub2Ind(i, j, sim->wing->num_spanwise_panels);
             Simulation_GetCorners(sim, SURFACE_POINTS, i, j, corners);
 
             a1 = Vector3D_Distance(corners[0], corners[1]);
@@ -392,8 +392,8 @@ void Simulation_ComputeBoundRingPoints(Simulation *sim) {
     Vector3D *next;
     Vector3D *point;
 
-    int num_rows = sim->wing.num_chordwise_panels + 1;
-    int num_cols = sim->wing.num_spanwise_panels + 1;
+    int num_rows = sim->wing->num_chordwise_panels + 1;
+    int num_cols = sim->wing->num_spanwise_panels + 1;
 
     for (int j = 0; j < num_cols; j++) {
         for (int i = 0; i < num_rows; i++) {
@@ -432,8 +432,8 @@ void Simulation_Process(Simulation *sim) {
 
         return;
     } else {
-        sim->wing.last_position = sim->wing.position;
-        sim->wing.last_rotation = sim->wing.rotation;
+        sim->wing->last_position = sim->wing->position;
+        sim->wing->last_rotation = sim->wing->rotation;
     }
 }
 
@@ -450,7 +450,7 @@ void Simulation_ComputeKinematicVelocities(Simulation *sim) {
     } else {
         Vector3D current;
         Vector3D previous;
-        Vector3D inverse_rotation = sim->wing.rotation;
+        Vector3D inverse_rotation = sim->wing->rotation;
 
         Vector3D *velocity;
 
@@ -460,8 +460,8 @@ void Simulation_ComputeKinematicVelocities(Simulation *sim) {
         double last_rotation_matrix[9];
         double inverse_rotation_matrix[9];
 
-        FillRotationMatrix(&sim->wing.rotation, rotation_matrix);
-        FillRotationMatrix(&sim->wing.last_rotation, last_rotation_matrix);
+        FillRotationMatrix(&sim->wing->rotation, rotation_matrix);
+        FillRotationMatrix(&sim->wing->last_rotation, last_rotation_matrix);
         FillRotationMatrix(&inverse_rotation, inverse_rotation_matrix);
 
         for (size_t i = 0; i < num_control_points; i++) {
@@ -472,8 +472,8 @@ void Simulation_ComputeKinematicVelocities(Simulation *sim) {
 
             Vector3D_Rotate(&current, rotation_matrix);
             Vector3D_Rotate(&previous, last_rotation_matrix);
-            Vector3D_Add(&current, &sim->wing.position, &current);
-            Vector3D_Add(&previous, &sim->wing.last_position, &previous);
+            Vector3D_Add(&current, &sim->wing->position, &current);
+            Vector3D_Add(&previous, &sim->wing->last_position, &previous);
             Vector3D_Subtract(&current, &previous, velocity);
             Vector3D_Divide(velocity, sim->delta_time);
 
