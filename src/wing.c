@@ -1,15 +1,6 @@
-#include <math.h>
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stddef.h>
 
 #include "wing.h"
-#include "sub2ind.h"
-#include "vector3d.h"
-#include "constants.h"
-#include "allocate_doubles.h"
-#include "fill_rotation_matrix.h"
 
 void Wing_Print(const Wing *wing) {
     printf("Semi Span: %.2f m\n", wing->semi_span);

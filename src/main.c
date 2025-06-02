@@ -58,7 +58,6 @@ int main(int argc, char **argv) {
         sim->wing.position.x = -FAR_FIELD_VELOCITY * t;
         sim->wing.position.z = HEAVING_AMPLITUDE * sin(2.0 * PI * HEAVING_FREQUENCY * t);
         sim->wing.rotation.y = PITCHING_AMPLITUDE * sin(2.0 * PI * PITCHING_FREQUENCY * t) * PI / 180.0;
-
         Simulation_Process(sim);
     }
 

@@ -74,6 +74,12 @@ Simulation *Simulation_Init(const Wing *wing, int num_time_steps, double delta_t
     sim->wake_point_displacements = Vector3D_Allocate(num_wake_points_max);
     sim->spanwise_velocity_buffer = Vector3D_Allocate(wing->num_spanwise_panels);
 
+    Simulation_ComputeSurfacePoints(sim);
+    Simulation_ComputeSurfaceAreas(sim);
+    Simulation_ComputeSurfaceVectors(sim);
+    Simulation_ComputeBoundRingPoints(sim);
+    Simulation_ComputeControlPoints(sim);
+    
     return sim;
 }
 
@@ -434,7 +440,7 @@ void Simulation_Process(Simulation *sim) {
 void Simulation_ComputeKinematicVelocities(Simulation *sim) {
     size_t num_control_points = Simulation_GetNumPoints(sim, CONTROL_POINTS);
     
-    if (sim->iteration) {
+    if (!sim->iteration) {
         Vector3D zeros = {0.0, 0.0, 0.0};
 
         for (size_t i = 0; i < num_control_points; i++) {
