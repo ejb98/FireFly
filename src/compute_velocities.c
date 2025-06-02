@@ -12,7 +12,7 @@
 #include "apply_rotation.h"
 #include "assign_rotation.h"
 
-void compute_velocities(Wing *wing, double delta_time) {
+void compute_velocities(Simulation *wing, double delta_time) {
     size_t ipoint;
 
     double rot_mat[3][3];
@@ -26,9 +26,9 @@ void compute_velocities(Wing *wing, double delta_time) {
     assign_rotation(rot_mat, &wing->rotation);
     assign_rotation(rot_mat_prev, &wing->rotation_prev);
 
-    for (int j = 0; j < wing->num_spanwise_panels; j++) {
-        for (int i = 0; i < wing->num_chordwise_panels; i++) {
-            ipoint = Sub2Ind(i, j, wing->num_spanwise_panels);
+    for (int j = 0; j < wing->nspanwise_panel; j++) {
+        for (int i = 0; i < wing->nchordwise_panels; i++) {
+            ipoint = Sub2Ind(i, j, wing->nspanwise_panel);
 
             mesh_to_vector(&wing->control_points, ipoint, &curr);
 
@@ -41,7 +41,7 @@ void compute_velocities(Wing *wing, double delta_time) {
             add(&curr, &wing->position, &curr);
             add(&prev, &wing->position_prev, &prev);
             
-            mesh_to_vector(&wing->normal_vectors, ipoint, &normal);
+            mesh_to_vector(&wing->normals, ipoint, &normal);
 
             subtract(&curr, &prev, &velocity);
             divide(&velocity, delta_time);

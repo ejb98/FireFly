@@ -1,7 +1,7 @@
-#include <math.h>
-#include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 
 #include "vector3d.h"
 
@@ -29,18 +29,18 @@ void Vector3D_Divide(Vector3D *vector, double divisor) {
     vector->z /= divisor;
 }
 
-void Vector3D_Rotate(Vector3D *vector, const double (*rotation_matrix)[3]) {
-    vector->x = rotation_matrix[0][0] * (vector->x) + 
-                rotation_matrix[0][1] * (vector->y) + 
-                rotation_matrix[0][2] * (vector->z);
+void Vector3D_Rotate(Vector3D *vector, const double *rotation_matrix) {
+    vector->x = rotation_matrix[0] * (vector->x) + 
+                rotation_matrix[1] * (vector->y) + 
+                rotation_matrix[2] * (vector->z);
 
-    vector->y = rotation_matrix[1][0] * (vector->x) + 
-                rotation_matrix[1][1] * (vector->y) + 
-                rotation_matrix[1][2] * (vector->z);
+    vector->y = rotation_matrix[3] * (vector->x) + 
+                rotation_matrix[4] * (vector->y) + 
+                rotation_matrix[5] * (vector->z);
 
-    vector->z = rotation_matrix[2][0] * (vector->x) + 
-                rotation_matrix[2][1] * (vector->y) + 
-                rotation_matrix[2][2] * (vector->z);
+    vector->z = rotation_matrix[6] * (vector->x) + 
+                rotation_matrix[7] * (vector->y) + 
+                rotation_matrix[8] * (vector->z);
 }
 
 void Vector3D_Cross(const Vector3D *vector_a, const Vector3D *vector_b, Vector3D *product) {
@@ -85,7 +85,9 @@ Vector3D *Vector3D_Allocate(size_t num_elements) {
     Vector3D *ptr = (Vector3D *) malloc(sizeof(Vector3D) * num_elements);
 
     if (ptr == NULL) {
-        fprintf(stderr, "Vector3D_Allocate: malloc returned NULL for %zu elements", num_elements);
+        fprintf(stderr, "Vector3D_Allocate: malloc returned NULL");
+
+        return NULL;
     }
 
     return ptr;

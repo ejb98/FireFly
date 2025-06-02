@@ -7,7 +7,7 @@
 #include "mesh_to_vector.h"
 #include "induce_velocities.h"
 
-void rollup_wake(Wing *wing, double delta_time) {
+void rollup_wake(Simulation *wing, double delta_time) {
     int num_rows;
     int num_cols;
 

@@ -10,7 +10,7 @@
 #include "apply_rotation.h"
 #include "assign_rotation.h"
 
-void shed_wake(Wing *wing) {
+void shed_wake(Simulation *wing) {
     Vector3D point;
 
     double rot_mat[3][3];
@@ -81,18 +81,18 @@ void shed_wake(Wing *wing) {
     }
 
     if (wing->wake_rings.num_rows > 1) {
-        for (int j = 0; j < wing->num_spanwise_panels; j++) {
+        for (int j = 0; j < wing->nspanwise_panel; j++) {
             if (wing->wake_rings.num_rows > 2) {
                 for (int i = wing->wake_rings.num_rows - 2; i > 0; i--) {
-                    icurr = Sub2Ind(i, j, wing->num_spanwise_panels);
-                    iprev = Sub2Ind(i - 1, j, wing->num_spanwise_panels);
+                    icurr = Sub2Ind(i, j, wing->nspanwise_panel);
+                    iprev = Sub2Ind(i - 1, j, wing->nspanwise_panel);
 
                     wing->wake_vorticity[icurr] = wing->wake_vorticity[iprev];
                 }
             }
 
-            iwing = Sub2Ind(wing->num_chordwise_panels - 1, j, wing->num_spanwise_panels);
-            iwake = Sub2Ind(0, j, wing->num_spanwise_panels);
+            iwing = Sub2Ind(wing->nchordwise_panels - 1, j, wing->nspanwise_panel);
+            iwake = Sub2Ind(0, j, wing->nspanwise_panel);
 
             wing->wake_vorticity[iwake] = wing->bound_vorticity[iwing];
         }

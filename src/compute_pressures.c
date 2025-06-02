@@ -11,7 +11,7 @@
 #include "assign_corners.h"
 #include "compute_magnitude.h"
 
-void compute_pressures(Wing *wing, double delta_time, double rho) {
+void compute_pressures(Simulation *wing, double delta_time, double rho) {
     if (!wing->iteration) {
         wing->total_lift = 0.0;
 
@@ -40,17 +40,17 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
     Vector3D wake_induced_velocity;
 
     lift = 0.0;
-    for (int j = 0; j < wing->num_spanwise_panels; j++) {
+    for (int j = 0; j < wing->nspanwise_panel; j++) {
 
-        for (int i = 0; i < wing->num_chordwise_panels; i++) {
-            ivortex = Sub2Ind(i, j, wing->num_spanwise_panels);
+        for (int i = 0; i < wing->nchordwise_panels; i++) {
+            ivortex = Sub2Ind(i, j, wing->nspanwise_panel);
 
             assign_corners(&wing->surface_panels, i, j, corners);
             subtract(corners + 1, corners, &front);
             subtract(corners + 3, corners, &left);
             subtract(corners + 2, corners + 1, &right);
 
-            normz = wing->normal_vectors.z[ivortex];
+            normz = wing->normals.z[ivortex];
             
             dx = 0.5 * (compute_magnitude(&left) + compute_magnitude(&right));
             dy = compute_magnitude(&front);
@@ -62,13 +62,13 @@ void compute_pressures(Wing *wing, double delta_time, double rho) {
             gamma = wing->bound_vorticity[ivortex];
 
             if (i) {
-                gamma_previ = wing->bound_vorticity[Sub2Ind(i - 1, j, wing->num_spanwise_panels)];
+                gamma_previ = wing->bound_vorticity[Sub2Ind(i - 1, j, wing->nspanwise_panel)];
             } else {
                 gamma_previ = 0.0;
             }
 
             if (j) {
-                gamma_prevj = wing->bound_vorticity[Sub2Ind(i, j - 1, wing->num_spanwise_panels)];
+                gamma_prevj = wing->bound_vorticity[Sub2Ind(i, j - 1, wing->nspanwise_panel)];
             } else {
                 gamma_prevj = 0.0;
             }

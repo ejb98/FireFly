@@ -7,7 +7,7 @@
 #include "geometry.h"
 #include "compute_coefficients.h"
 
-void solve(Wing *wing) {
+void solve(Simulation *wing) {
     if (wing->iteration) {
         if (wing->iteration > 1) {
             size_t num_points = (size_t) get_size(&wing->control_points);
@@ -42,7 +42,7 @@ void solve(Wing *wing) {
     if (wing->iteration) {
         int info;
         int num_right_hand_sides = 1;
-        int column_size = wing->num_chordwise_panels * wing->num_spanwise_panels;
+        int column_size = wing->nchordwise_panels * wing->nspanwise_panel;
 
         size_t imatrix;
         size_t num_rings = ((size_t) (wing->wake_rings.num_rows - 1)) * (wing->wake_rings.num_cols - 1);

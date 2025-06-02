@@ -11,7 +11,7 @@
 #include "mesh_to_vector.h"
 #include "induce_velocities.h"
 
-void compute_coefficients(Wing *wing, Geometry inducing_rings) {
+void compute_coefficients(Simulation *wing, Geometry inducing_rings) {
     Vector3D point;
     Vector3D normal;
     Vector3D w_induced;
@@ -48,7 +48,7 @@ void compute_coefficients(Wing *wing, Geometry inducing_rings) {
 
     for (int mirror = 0; mirror < 2; mirror++) {
         for (size_t ipoint = 0; ipoint < num_control_points; ipoint++) {
-            mesh_to_vector(&wing->normal_vectors, ipoint, &normal);
+            mesh_to_vector(&wing->normals, ipoint, &normal);
             mesh_to_vector(&wing->control_points, ipoint, &point);
 
             if (mirror) {
