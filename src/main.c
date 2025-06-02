@@ -21,8 +21,8 @@
 #define ANGLE_OF_ATTACK 5.0
 #define HEAVING_FREQUENCY 0.0
 #define HEAVING_AMPLITUDE 0.0
-#define PITCHING_FREQUENCY 0.0
-#define PITCHING_AMPLITUDE 0.0
+#define PITCHING_FREQUENCY 2.0
+#define PITCHING_AMPLITUDE 5.0
 #define FAR_FIELD_VELOCITY 10.0
 #define NUM_SPANWISE_PANELS 13
 #define NUM_CHORDWISE_PANELS 4
@@ -59,6 +59,10 @@ int main(int argc, char **argv) {
         wing.rotation.y = PITCHING_AMPLITUDE * sin(2.0 * PI * PITCHING_FREQUENCY * t) * PI / 180.0;
         
         Simulation_Process(sim);
+
+        if (sim->iteration > 0) {
+            Simulation_WritePoints2VTK(sim, WAKE_RING_POINTS, FILE_PATH);
+        }
     }
 
     putchar('\n');

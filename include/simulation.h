@@ -52,6 +52,7 @@ void Simulation_ComputeSurfaceAreas(Simulation *sim);
 void Simulation_ComputeKinematicVelocities(Simulation *sim);
 void Simulation_ComputeBoundRingPoints(Simulation *sim);
 void Simulation_ComputeControlPoints(Simulation *sim);
+void Simulation_ShedWake(Simulation *sim);
 void Simulation_Process(Simulation *sim);
 void Simulation_Deallocate(Simulation *sim);
 void Simulation_WritePoints2VTK(const Simulation *sim, Geometry geometry, const char *file_path);

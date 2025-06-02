@@ -417,10 +417,22 @@ void Simulation_Process(Simulation *sim) {
 
     printf("Solving step %d...", sim->iteration);
 
-    Simulation_ComputeKinematicVelocities(sim);
+    if (!sim->iteration) {
+        size_t num_control_points = Simulation_GetNumPoints(sim, CONTROL_POINTS);
 
+        Vector3D zeros = {0.0, 0.0, 0.0};
+
+        for (size_t i = 0; i < num_control_points; i++) {
+            sim->kinematic_velocities[i] = zeros;
+            sim->last_control_points[i] = sim->control_points[i];
+        }
+    } else {
+        Simulation_ComputeKinematicVelocities(sim);
+    }
+
+    Simulation_ShedWake(sim);
+    
     /*
-    * Shed Wake
     * Solve System of Equations
     * Roll up Wake if 0 < Iteration < Steps - 1
     */
@@ -440,44 +452,135 @@ void Simulation_Process(Simulation *sim) {
 void Simulation_ComputeKinematicVelocities(Simulation *sim) {
     size_t num_control_points = Simulation_GetNumPoints(sim, CONTROL_POINTS);
     
-    if (!sim->iteration) {
-        Vector3D zeros = {0.0, 0.0, 0.0};
+    Vector3D current;
+    Vector3D previous;
+    Vector3D inverse_rotation = sim->wing->rotation;
 
-        for (size_t i = 0; i < num_control_points; i++) {
-            sim->kinematic_velocities[i] = zeros;
-            sim->last_control_points[i] = sim->control_points[i];
+    Vector3D *velocity;
+
+    Vector3D_Multiply(&inverse_rotation, -1.0);
+    
+    double rotation_matrix[9];
+    double last_rotation_matrix[9];
+    double inverse_rotation_matrix[9];
+
+    FillRotationMatrix(&sim->wing->rotation, rotation_matrix);
+    FillRotationMatrix(&sim->wing->last_rotation, last_rotation_matrix);
+    FillRotationMatrix(&inverse_rotation, inverse_rotation_matrix);
+
+    for (size_t i = 0; i < num_control_points; i++) {
+        current = sim->control_points[i];
+        previous = sim->last_control_points[i];
+
+        velocity = sim->kinematic_velocities + i;
+
+        Vector3D_Rotate(&current, rotation_matrix);
+        Vector3D_Rotate(&previous, last_rotation_matrix);
+        Vector3D_Add(&current, &sim->wing->position, &current);
+        Vector3D_Add(&previous, &sim->wing->last_position, &previous);
+        Vector3D_Subtract(&current, &previous, velocity);
+        Vector3D_Divide(velocity, sim->delta_time);
+
+        sim->last_control_points[i] = sim->control_points[i];
+    }
+}
+
+void Simulation_ShedWake(Simulation *sim) {
+    Vector3D *point;
+    Vector3D *position = &sim->wing->position;
+    Vector3D *last_position = &sim->wing->last_position;
+
+    double rotation_matrix[9];
+    
+    size_t num_points = Simulation_GetNumPoints(sim, WAKE_RING_POINTS);
+
+    // Convert the wake points from local to global coordinates
+
+    if (sim->iteration) {
+        size_t last_num_points = num_points - Simulation_GetNumColumns(sim, WAKE_RING_POINTS);
+
+        FillRotationMatrix(&sim->wing->last_rotation, rotation_matrix);
+
+        for (size_t i = 0; i < last_num_points; i++) {
+            point = sim->wake_ring_points + i;
+
+            Vector3D_Rotate(point, rotation_matrix);
+            Vector3D_Add(point, last_position, point);
         }
-    } else {
-        Vector3D current;
-        Vector3D previous;
-        Vector3D inverse_rotation = sim->wing->rotation;
+    }
 
-        Vector3D *velocity;
+    size_t icurr;
+    size_t iprev;
 
-        Vector3D_Multiply(&inverse_rotation, -1.0);
-        
-        double rotation_matrix[9];
-        double last_rotation_matrix[9];
-        double inverse_rotation_matrix[9];
+    Vector3D point_copy;
 
-        FillRotationMatrix(&sim->wing->rotation, rotation_matrix);
-        FillRotationMatrix(&sim->wing->last_rotation, last_rotation_matrix);
-        FillRotationMatrix(&inverse_rotation, inverse_rotation_matrix);
+    int num_rows = Simulation_GetNumRows(sim, BOUND_RING_POINTS);
+    int num_cols = Simulation_GetNumColumns(sim, BOUND_RING_POINTS);
 
-        for (size_t i = 0; i < num_control_points; i++) {
-            current = sim->control_points[i];
-            previous = sim->last_control_points[i];
+    FillRotationMatrix(&sim->wing->rotation, rotation_matrix);
 
-            velocity = sim->kinematic_velocities + i;
+    for (int j = 0; j < num_cols; j++) {
+        // Shift the old wake points down one row
 
-            Vector3D_Rotate(&current, rotation_matrix);
-            Vector3D_Rotate(&previous, last_rotation_matrix);
-            Vector3D_Add(&current, &sim->wing->position, &current);
-            Vector3D_Add(&previous, &sim->wing->last_position, &previous);
-            Vector3D_Subtract(&current, &previous, velocity);
-            Vector3D_Divide(velocity, sim->delta_time);
+        if (sim->iteration) {
+            for (int i = sim->iteration; i > 0; i--) {
+                icurr = Sub2Ind(i, j, num_cols);
+                iprev = Sub2Ind(i - 1, j, num_cols);
 
-            sim->last_control_points[i] = sim->control_points[i];
+                sim->wake_ring_points[icurr] = sim->wake_ring_points[iprev];
+            }
+        }
+
+        // Insert the new wake point into the first row, column j
+        point_copy = sim->bound_ring_points[Sub2Ind(num_rows - 1, j, num_cols)];
+
+        Vector3D_Rotate(&point_copy, rotation_matrix);
+        Vector3D_Add(&point_copy, position, &point_copy);
+
+        sim->wake_ring_points[Sub2Ind(0, j, num_cols)] = point_copy;
+    }
+
+    Vector3D opposite_rotation = sim->wing->rotation;
+
+    Vector3D_Multiply(&opposite_rotation, -1.0);
+    FillRotationMatrix(&opposite_rotation, rotation_matrix);
+
+    // Convert wake points back from global to local coordinates
+    for (size_t i = 0; i < num_points; i++) {
+        point = sim->wake_ring_points + i;
+
+        Vector3D_Subtract(point, position, point);
+        Vector3D_Rotate(point, rotation_matrix);
+    }
+
+    // Assign trailing wing vorticity strengths to the first row of the wake
+
+    num_rows = Simulation_GetNumRows(sim, CONTROL_POINTS);
+    num_cols = Simulation_GetNumColumns(sim, CONTROL_POINTS);
+    
+    int num_wake_point_rows = Simulation_GetNumRows(sim, WAKE_RING_POINTS);
+
+    size_t ibound;
+    size_t iwake;
+
+    if (num_wake_point_rows > 1) {
+        for (int j = 0; j < num_cols; j++) {
+            if (num_wake_point_rows > 2) {
+                // Shift the old wake vortex strengths down one row
+
+                for (int i = num_wake_point_rows - 2; i > 0; i--) {
+                    icurr = Sub2Ind(i, j, num_cols);
+                    iprev = Sub2Ind(i - 1, j, num_cols);
+
+                    sim->wake_vortex_strengths[icurr] = sim->wake_vortex_strengths[iprev];
+                }
+            }
+
+            iwake = Sub2Ind(0, j, num_cols);
+            ibound = Sub2Ind(num_rows - 1, j, num_cols);
+
+            // Insert the new vortex strength into the first row, column j
+            sim->wake_vortex_strengths[ibound] = sim->bound_vortex_strengths[iwake];
         }
     }
 }
