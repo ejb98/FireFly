@@ -56,6 +56,7 @@ void Simulation_ComputeBoundRingPoints(Simulation *sim);
 void Simulation_ComputeControlPoints(Simulation *sim);
 void Simulation_ComputeCoefficients(Simulation *sim);
 void Simulation_ComputeWakeInducedVelocities(Simulation *sim);
+void Simulation_RollupWake(Simulation *sim);
 void Simulation_ShedWake(Simulation *sim);
 void Simulation_Process(Simulation *sim);
 void Simulation_Solve(Simulation *sim);

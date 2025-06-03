@@ -10,7 +10,7 @@
 
 #define NACA_M 6
 #define NACA_P 4
-#define CUTOFF 1e-10
+#define CUTOFF 1e-4
 #define SEMI_SPAN 4.0
 #define FILE_PATH "results\\"
 #define ROOT_CHORD 1.0
