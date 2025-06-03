@@ -30,7 +30,7 @@ typedef struct Simulation {
 
     Wing *wing;
 
-    Vector3D unit_velocity_buffer[4];
+    Vector3D unit_velocities[4];
     Vector3D chordwise_velocity_buffer;
 
     Vector3D *normals;
