@@ -30,11 +30,13 @@ typedef struct Simulation {
 
     Wing *wing;
 
+    Vector3D unit_velocity_buffer[4];
     Vector3D chordwise_velocity_buffer;
 
     Vector3D *normals;
     Vector3D *surface_points;
     Vector3D *control_points;
+    Vector3D *corner_buffer[4];
     Vector3D *wake_ring_points;
     Vector3D *bound_ring_points;
     Vector3D *spanwise_tangents;
@@ -52,9 +54,11 @@ void Simulation_ComputeSurfaceAreas(Simulation *sim);
 void Simulation_ComputeKinematicVelocities(Simulation *sim);
 void Simulation_ComputeBoundRingPoints(Simulation *sim);
 void Simulation_ComputeControlPoints(Simulation *sim);
+void Simulation_ComputeCoefficients(Simulation *sim);
 void Simulation_ShedWake(Simulation *sim);
 void Simulation_Process(Simulation *sim);
 void Simulation_Deallocate(Simulation *sim);
+void Simulation_InduceUnitVelocities(Simulation *sim, Geometry geometry, int i, int j, const Vector3D *point);
 void Simulation_WritePoints2VTK(const Simulation *sim, Geometry geometry, const char *file_path);
 void Simulation_GetCorners(const Simulation *sim, Geometry geometry, int i, int j, Vector3D *corners[]);
 int Simulation_GetNumRows(const Simulation* sim, Geometry geometry);
