@@ -13,7 +13,8 @@ typedef struct Simulation {
     int *pivot_vector;
 
     bool is_complete;
-    bool has_updated_geometry;
+
+    char *results_path;
 
     double delta_time;
     double air_density;
@@ -21,13 +22,13 @@ typedef struct Simulation {
     double starting_vortex_offset;
 
     double *pressures;
+    double *last_integral;
     double *a_wing_on_wing;
     double *b_wing_on_wing;
     double *surface_areas;
     double *right_hand_side;
     double *wake_vortex_strengths;
     double *bound_vortex_strengths;
-    double *last_bound_vortex_strengths;
 
     Wing *wing;
 
@@ -65,14 +66,15 @@ void Simulation_Process(Simulation *sim);
 void Simulation_Solve(Simulation *sim);
 void Simulation_Deallocate(Simulation *sim);
 void Simulation_InduceUnitVelocities(Simulation *sim, Geometry geometry, int i, int j, const Vector3D *point);
-void Simulation_WritePoints2VTK(const Simulation *sim, Geometry geometry, const char *file_path);
+void Simulation_WritePoints2VTK(const Simulation *sim, Geometry geometry);
+void Simulation_WritePressures2CSV(const Simulation *sim);
 void Simulation_GetCorners(const Simulation *sim, Geometry geometry, int i, int j, Vector3D *corners[]);
 int Simulation_GetNumRows(const Simulation* sim, Geometry geometry);
 int Simulation_GetNumColumns(const Simulation* sim, Geometry geometry);
 size_t Simulation_GetNumPoints(const Simulation* sim, Geometry geometry);
 size_t Simulation_GetNumQuads(const Simulation* sim, Geometry geometry);
 Vector3D *Simulation_GetPoints(const Simulation *sim, Geometry geometry);
-Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, double air_density, 
-                            double starting_vortex_offset, double cutoff_radius);
+Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, double air_density,
+                            double starting_vortex_offset, double cutoff_radius, const char* results_path);
 
 #endif

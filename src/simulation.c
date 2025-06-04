@@ -16,7 +16,7 @@
 #include "induce_unit_velocity.h"
 
 Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, double air_density,
-                            double starting_vortex_offset, double cutoff_radius) {
+                            double starting_vortex_offset, double cutoff_radius, const char* results_path) {
     Simulation *sim = (Simulation *) malloc(sizeof(Simulation));
 
     if (sim == NULL) {
@@ -44,7 +44,30 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, d
     }
 
     sim->is_complete = false;
-    sim->has_updated_geometry = false;
+
+    size_t path_length = strlen(results_path);
+    bool needs_separator = results_path[path_length - 1] != PATH_SEPARATOR;
+
+    size_t num_elements = path_length + needs_separator + 1;
+    sim->results_path = (char *) malloc(sizeof(char) * num_elements);
+
+    if (sim->results_path == NULL) {
+        fprintf(stderr, "Simulation_Init: malloc returned NULL");
+
+        return NULL;
+    }
+
+    if (needs_separator) {
+        snprintf(sim->results_path, num_elements, "%s%c", results_path, PATH_SEPARATOR);
+    } else {
+        strncpy(sim->results_path, results_path, num_elements);
+    }
+
+    for (size_t ichar = 0; ichar < strlen(sim->results_path); ichar++) {
+        if (sim->results_path[ichar] == OTHER_SEPARATOR) {
+            sim->results_path[ichar] = PATH_SEPARATOR;
+        }
+    }
 
     sim->delta_time = delta_time;
     sim->air_density = air_density;
@@ -52,13 +75,13 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, d
     sim->starting_vortex_offset = starting_vortex_offset;
 
     sim->pressures = AllocateDoubles(num_control_points);
+    sim->last_integral = AllocateDoubles(num_control_points);
     sim->a_wing_on_wing = AllocateDoubles(num_control_points * num_control_points);
     sim->b_wing_on_wing = AllocateDoubles(num_control_points * num_control_points);
     sim->surface_areas = AllocateDoubles(num_control_points);
     sim->right_hand_side = AllocateDoubles(num_control_points);
     sim->wake_vortex_strengths = AllocateDoubles(num_wake_rings_max);
     sim->bound_vortex_strengths = AllocateDoubles(num_control_points);
-    sim->last_bound_vortex_strengths = AllocateDoubles(num_control_points);
 
     sim->wing = wing;
 
@@ -84,21 +107,25 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, d
     Simulation_ComputeControlPoints(sim);
     Simulation_ComputeCoefficients(sim, false, false);
     Simulation_ComputeCoefficients(sim, true, true);
-    
+    Simulation_WritePoints2VTK(sim, CONTROL_POINTS);
+    Simulation_WritePoints2VTK(sim, SURFACE_POINTS);
+    Simulation_WritePoints2VTK(sim, BOUND_RING_POINTS);
+
     return sim;
 }
 
 void Simulation_Deallocate(Simulation *sim) {    
     free(sim->pivot_vector);
+    free(sim->results_path);
 
     free(sim->pressures);
+    free(sim->last_integral);
     free(sim->a_wing_on_wing);
     free(sim->b_wing_on_wing);
     free(sim->surface_areas);
     free(sim->right_hand_side);
     free(sim->wake_vortex_strengths);
     free(sim->bound_vortex_strengths);
-    free(sim->last_bound_vortex_strengths);
 
     free(sim->normals);
     free(sim->surface_points);
@@ -269,15 +296,23 @@ void Simulation_GetCorners(const Simulation *sim, Geometry geometry, int i, int 
     corners[3] = points + Sub2Ind(i + 1, j, num_cols);
 }
 
-void Simulation_WritePoints2VTK(const Simulation *sim, Geometry geometry, const char *file_path) {
+void Simulation_WritePoints2VTK(const Simulation *sim, Geometry geometry) {
     int num_rows = Simulation_GetNumRows(sim, geometry);
     int num_cols = Simulation_GetNumColumns(sim, geometry);
 
     size_t num_quads = Simulation_GetNumQuads(sim, geometry);
     size_t num_points = Simulation_GetNumPoints(sim, geometry);
+    size_t num_elements = strlen(sim->results_path) + 32;
 
-    char full_path[175];
-    char description[20];
+    char *full_path = (char *) malloc(sizeof(char) * num_elements);
+
+    if (full_path == NULL) {
+        fprintf(stderr, "Simulation_WritePoints2VTK: malloc returned NULL");
+
+        return;
+    }
+
+    char description[18];
 
     Vector3D *points = Simulation_GetPoints(sim, geometry);
 
@@ -311,15 +346,16 @@ void Simulation_WritePoints2VTK(const Simulation *sim, Geometry geometry, const 
     }
 
     if (sim->iteration < 0) {
-        snprintf(full_path, sizeof(full_path), "%s%s.vtk", file_path, description);
+        snprintf(full_path, num_elements, "%s%s.vtk", sim->results_path, description);
     } else {
-        snprintf(full_path, sizeof(full_path), "%s%s.vtk.%d", file_path, description, sim->iteration);
+        snprintf(full_path, num_elements, "%s%s.vtk.%d", sim->results_path, description, sim->iteration);
     }
 
     FILE *file = fopen(full_path, "w");
 
     if (file == NULL) {
         fprintf(stderr, "Simulation_WritePoints2VTK: failed to open %s", full_path);
+        free(full_path);
 
         return;
     }
@@ -350,6 +386,7 @@ void Simulation_WritePoints2VTK(const Simulation *sim, Geometry geometry, const 
     }
 
     fclose(file);
+    free(full_path);
 }
 
 void Simulation_ComputeControlPoints(Simulation *sim) {
@@ -426,19 +463,24 @@ void Simulation_Process(Simulation *sim) {
     Simulation_ComputeKinematicVelocities(sim);
     Simulation_ShedWake(sim);
 
+    if (Simulation_GetNumRows(sim, WAKE_RING_POINTS) > 1) {
+        Simulation_WritePoints2VTK(sim, WAKE_RING_POINTS);
+    }
+
     if (sim->iteration) {
         Simulation_ComputeWakeInducedVelocities(sim, false, false);
         Simulation_ComputeWakeInducedVelocities(sim, true, true);
         Simulation_Solve(sim);
     }
     
+    Simulation_ComputePressures(sim);
+    Simulation_WritePressures2CSV(sim);
+
     if (sim->iteration > 0 && sim->iteration < sim->num_time_steps - 1) {
         Simulation_RollupWake(sim);
     }
 
-    Simulation_ComputePressures(sim);
-
-    printf("done\n");
+    printf("done: Lift = %f N\n", sim->wing->lift);
 
     if (sim->iteration == sim->num_time_steps - 1) {
         sim->is_complete = true;
@@ -864,30 +906,31 @@ void Simulation_ComputePressures(Simulation *sim) {
             sim->pressures[i] = 0.0;
         }
 
+        sim->wing->lift = 0.0;
+
         return;
     }
 
-    double chordwise_dot;
-    double spanwise_dot;
-    double gamma_previ;
-    double gamma_prevj;
-    double derivative;
-    double integral;
-    double gamma;
-    double normz;
-    double lift;
-    double dx;
-    double dy;
     double a;
     double b;
+    double dx;
+    double dy;
+    double lift;
+    double gamma;
+    double integral;
+    double derivative;
+    double gamma_previ;
+    double gamma_prevj;
+    double spanwise_dot;
+    double chordwise_dot;
 
     size_t imatrix;
     size_t ivortex;
     size_t num_wake_rings = Simulation_GetNumQuads(sim, WAKE_RING_POINTS);
 
     Vector3D back;
-    Vector3D front;
     Vector3D left;
+    Vector3D front;
     Vector3D right;
     Vector3D leading;
     Vector3D velocity;
@@ -916,8 +959,6 @@ void Simulation_ComputePressures(Simulation *sim) {
             Vector3D_Subtract(corners[1], corners[0], &front);
             Vector3D_Subtract(corners[3], corners[0], &left);
             Vector3D_Subtract(corners[2], corners[1], &right);
-
-            normz = sim->normals[ivortex].z;
             
             dx = (Vector3D_Magnitude(&left) + Vector3D_Magnitude(&right)) / 2.0;
             dy = (Vector3D_Magnitude(&front) + Vector3D_Magnitude(&back)) / 2.0;
@@ -926,8 +967,15 @@ void Simulation_ComputePressures(Simulation *sim) {
 
             if (i) {
                 gamma_previ = sim->bound_vortex_strengths[Sub2Ind(i - 1, j, num_cols)];
+
+                a = sim->control_points[Sub2Ind(i - 1, j, num_cols)].x - leading.x;
+                b = sim->control_points[ivortex].x - leading.x;
+
+                integral += (b - a) * (1.5 * gamma - 0.5 * gamma_previ);
             } else {
                 gamma_previ = 0.0;
+
+                Vector3D_Lerp(corners[0], corners[1], 0.5, &leading);
             }
 
             if (j) {
@@ -936,18 +984,9 @@ void Simulation_ComputePressures(Simulation *sim) {
                 gamma_prevj = 0.0;
             }
 
-            if (!i) {
-                Vector3D_Lerp(corners[0], corners[1], 0.5, &leading);
-            } else {
-                a = sim->control_points[Sub2Ind(i - 1, j, num_cols)].x - leading.x;
-                b = sim->control_points[ivortex].x - leading.x;
+            derivative = (integral - sim->last_integral[ivortex]) / sim->delta_time;
 
-                integral += (b - a) * gamma + 0.5 * (b - a) * (gamma - gamma_previ);
-            }
-
-            derivative = (integral - sim->last_bound_vortex_strengths[ivortex]) / sim->delta_time;
-
-            sim->last_bound_vortex_strengths[ivortex] = integral;
+            sim->last_integral[ivortex] = integral;
 
             for (size_t iwake = 0; iwake < num_wake_rings; iwake++) {
                 imatrix = ivortex * num_wake_rings + iwake;
@@ -965,9 +1004,64 @@ void Simulation_ComputePressures(Simulation *sim) {
             sim->pressures[ivortex] = sim->air_density * (chordwise_dot * (gamma - gamma_previ) / dx +
                                                            spanwise_dot * (gamma - gamma_prevj) / dy + derivative);
 
-            lift -= sim->surface_areas[ivortex] * sim->pressures[ivortex] * normz;
+            lift -= sim->surface_areas[ivortex] * sim->pressures[ivortex] * sim->normals[ivortex].z;;
         }
     }
 
     sim->wing->lift = lift;
+}
+
+void Simulation_WritePressures2CSV(const Simulation *sim) {
+    size_t num_elements = strlen(sim->results_path) + 14;
+    size_t num_points = Simulation_GetNumPoints(sim, CONTROL_POINTS);
+
+    char *full_path = (char *) malloc(sizeof(char) * num_elements);
+
+    if (full_path == NULL) {
+        fprintf(stderr, "Simulation_WritePressures2CSV: malloc returned NULL");
+
+        return;
+    }
+
+    snprintf(full_path, num_elements, "%spressures.csv", sim->results_path);
+
+    FILE *file;
+
+    if (sim->iteration) {
+        file = fopen(full_path, "a");
+    } else {
+        file = fopen(full_path, "w");
+    }
+
+    if (file == NULL) {
+        fprintf(stderr, "Simulation_WritePressures2CSV: failed to open %s", full_path);
+        free(full_path);
+
+        return;
+    }
+
+    if (!sim->iteration) {
+        fprintf(file, "t,");
+
+        for (size_t i = 0; i < num_points; i++) {
+            if (i == num_points - 1) {
+                fprintf(file, "c%zu\n", i);
+            } else {
+                fprintf(file, "c%zu,", i);
+            }
+        }
+    }
+
+    fprintf(file, "%f,", sim->iteration * sim->delta_time);
+
+    for (size_t i = 0; i < num_points; i++) {
+        if (i == num_points - 1) {
+            fprintf(file, "%f\n", sim->pressures[i]);
+        } else {
+            fprintf(file, "%f,", sim->pressures[i]);
+        }
+    }
+
+    fclose(file);
+    free(full_path);
 }
