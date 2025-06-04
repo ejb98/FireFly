@@ -507,7 +507,6 @@ void Simulation_ShedWake(Simulation *sim) {
     size_t num_points = Simulation_GetNumPoints(sim, WAKE_RING_POINTS);
 
     // Convert the wake points from local to global coordinates
-
     if (sim->iteration) {
         size_t last_num_points = num_points - Simulation_GetNumColumns(sim, WAKE_RING_POINTS);
 
@@ -532,8 +531,8 @@ void Simulation_ShedWake(Simulation *sim) {
     FillRotationMatrix(&sim->wing->rotation, rotation_matrix);
 
     for (int j = 0; j < num_cols; j++) {
-        // Shift the old wake points down one row
 
+        // Shift the old wake points down one row
         if (sim->iteration) {
             for (int i = sim->iteration; i > 0; i--) {
                 icurr = Sub2Ind(i, j, num_cols);
@@ -566,7 +565,6 @@ void Simulation_ShedWake(Simulation *sim) {
     }
 
     // Assign trailing wing vorticity strengths to the first row of the wake
-
     num_rows = Simulation_GetNumRows(sim, CONTROL_POINTS);
     num_cols = Simulation_GetNumColumns(sim, CONTROL_POINTS);
     
@@ -578,8 +576,8 @@ void Simulation_ShedWake(Simulation *sim) {
     if (num_wake_point_rows > 1) {
         for (int j = 0; j < num_cols; j++) {
             if (num_wake_point_rows > 2) {
-                // Shift the old wake vortex strengths down one row
 
+                // Shift the old wake vortex strengths down one row
                 for (int i = num_wake_point_rows - 2; i > 0; i--) {
                     icurr = Sub2Ind(i, j, num_cols);
                     iprev = Sub2Ind(i - 1, j, num_cols);
@@ -874,28 +872,42 @@ void Simulation_ComputePressures(Simulation *sim) {
     double gamma_previ;
     double gamma_prevj;
     double derivative;
+    double integral;
     double gamma;
     double normz;
     double lift;
     double dx;
     double dy;
+    double a;
+    double b;
 
+    size_t imatrix;
     size_t ivortex;
+    size_t num_wake_rings = Simulation_GetNumQuads(sim, WAKE_RING_POINTS);
 
     Vector3D back;
     Vector3D front;
     Vector3D left;
     Vector3D right;
+    Vector3D leading;
     Vector3D velocity;
-    Vector3D *corners[4];
+    Vector3D wake_induced_velocity;
 
+    Vector3D *corners[4];
+    
     lift = 0.0;
 
     int num_rows = Simulation_GetNumRows(sim, CONTROL_POINTS);
     int num_cols = Simulation_GetNumColumns(sim, CONTROL_POINTS);
 
     for (int j = 0; j < num_cols; j++) {
+
+        integral = 0.0;
         for (int i = 0; i < num_rows; i++) {
+            wake_induced_velocity.x = 0.0;
+            wake_induced_velocity.y = 0.0;
+            wake_induced_velocity.z = 0.0;
+
             ivortex = Sub2Ind(i, j, num_cols);
 
             Simulation_GetCorners(sim, SURFACE_POINTS, i, j, corners);
@@ -924,11 +936,28 @@ void Simulation_ComputePressures(Simulation *sim) {
                 gamma_prevj = 0.0;
             }
 
-            derivative = (gamma - sim->last_bound_vortex_strengths[ivortex]) / sim->delta_time;
+            if (!i) {
+                Vector3D_Lerp(corners[0], corners[1], 0.5, &leading);
+            } else {
+                a = sim->control_points[Sub2Ind(i - 1, j, num_cols)].x - leading.x;
+                b = sim->control_points[ivortex].x - leading.x;
 
-            sim->last_bound_vortex_strengths[ivortex] = gamma;
+                integral += (b - a) * gamma + 0.5 * (b - a) * (gamma - gamma_previ);
+            }
 
-            Vector3D_Add(sim->kinematic_velocities + ivortex, sim->wake_induced_velocities + ivortex, &velocity);
+            derivative = (integral - sim->last_bound_vortex_strengths[ivortex]) / sim->delta_time;
+
+            sim->last_bound_vortex_strengths[ivortex] = integral;
+
+            for (size_t iwake = 0; iwake < num_wake_rings; iwake++) {
+                imatrix = ivortex * num_wake_rings + iwake;
+
+                wake_induced_velocity.x += sim->wake_induced_velocities[imatrix].x;
+                wake_induced_velocity.y += sim->wake_induced_velocities[imatrix].y;
+                wake_induced_velocity.z += sim->wake_induced_velocities[imatrix].z;
+            }
+
+            Vector3D_Add(sim->kinematic_velocities + ivortex, &wake_induced_velocity, &velocity);
             
             spanwise_dot = Vector3D_Dot(&velocity, sim->spanwise_tangents + ivortex);
             chordwise_dot = Vector3D_Dot(&velocity, sim->chordwise_tangents + ivortex);
@@ -936,7 +965,7 @@ void Simulation_ComputePressures(Simulation *sim) {
             sim->pressures[ivortex] = sim->air_density * (chordwise_dot * (gamma - gamma_previ) / dx +
                                                            spanwise_dot * (gamma - gamma_prevj) / dy + derivative);
 
-            lift -= dx * dy * sim->pressures[ivortex] * normz;
+            lift -= sim->surface_areas[ivortex] * sim->pressures[ivortex] * normz;
         }
     }
 
