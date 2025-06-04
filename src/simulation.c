@@ -15,7 +15,7 @@
 #include "fill_rotation_matrix.h"
 #include "induce_unit_velocity.h"
 
-Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time,
+Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, double air_density,
                             double starting_vortex_offset, double cutoff_radius) {
     Simulation *sim = (Simulation *) malloc(sizeof(Simulation));
 
@@ -47,6 +47,7 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time,
     sim->has_updated_geometry = false;
 
     sim->delta_time = delta_time;
+    sim->air_density = air_density;
     sim->cutoff_radius = cutoff_radius;
     sim->starting_vortex_offset = starting_vortex_offset;
 
@@ -74,20 +75,15 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time,
     sim->kinematic_velocities = Vector3D_Allocate(num_control_points);
     sim->wake_induced_velocities = Vector3D_Allocate(num_control_points * num_wake_rings_max);
     sim->spanwise_velocity_buffer = Vector3D_Allocate(wing->num_spanwise_panels);
-    sim->wake_point_displacements = calloc(num_wake_points_max, sizeof(Vector3D));
-
-    if (sim->wake_point_displacements == NULL) {
-        fprintf(stderr, "Simulation_Init: calloc returned NULL");
-
-        return NULL;
-    }
+    sim->wake_point_displacements = Vector3D_Allocate(num_wake_points_max);
 
     Simulation_ComputeSurfacePoints(sim);
     Simulation_ComputeSurfaceAreas(sim);
     Simulation_ComputeSurfaceVectors(sim);
     Simulation_ComputeBoundRingPoints(sim);
     Simulation_ComputeControlPoints(sim);
-    Simulation_ComputeCoefficients(sim);
+    Simulation_ComputeCoefficients(sim, false, false);
+    Simulation_ComputeCoefficients(sim, true, true);
     
     return sim;
 }
@@ -431,13 +427,16 @@ void Simulation_Process(Simulation *sim) {
     Simulation_ShedWake(sim);
 
     if (sim->iteration) {
-        Simulation_ComputeWakeInducedVelocities(sim);
+        Simulation_ComputeWakeInducedVelocities(sim, false, false);
+        Simulation_ComputeWakeInducedVelocities(sim, true, true);
         Simulation_Solve(sim);
     }
     
     if (sim->iteration > 0 && sim->iteration < sim->num_time_steps - 1) {
         Simulation_RollupWake(sim);
     }
+
+    Simulation_ComputePressures(sim);
 
     printf("done\n");
 
@@ -593,7 +592,7 @@ void Simulation_ShedWake(Simulation *sim) {
             ibound = Sub2Ind(num_rows - 1, j, num_cols);
 
             // Insert the new vortex strength into the first row, column j
-            sim->wake_vortex_strengths[ibound] = sim->bound_vortex_strengths[iwake];
+            sim->wake_vortex_strengths[iwake] = sim->bound_vortex_strengths[ibound];
         }
     }
 }
@@ -627,102 +626,172 @@ void Simulation_InduceUnitVelocities(Simulation *sim, Geometry geometry, int i, 
     sim->spanwise_velocity_buffer[j] = velocities[2];
 }
 
-void Simulation_ComputeCoefficients(Simulation *sim) {
-    Vector3D w_induced;
-    Vector3D v_induced;
-
-    Vector3D point_copy;
-    Vector3D normal_copy;
-
-    int num_rows = Simulation_GetNumRows(sim, BOUND_RING_POINTS) - 1;
-    int num_cols = Simulation_GetNumColumns(sim, BOUND_RING_POINTS) - 1;
-
-    size_t iring;
-    size_t imatrix;
-    size_t num_control_points = Simulation_GetNumPoints(sim, CONTROL_POINTS);
+void Simulation_ComputeCoefficients(Simulation *sim, bool append, bool mirror) {
+    size_t num_points = Simulation_GetNumPoints(sim, CONTROL_POINTS);
     size_t num_rings = Simulation_GetNumQuads(sim, BOUND_RING_POINTS);
-    size_t matrix_size = num_control_points * num_rings;
+    size_t num_rows = Simulation_GetNumRows(sim, BOUND_RING_POINTS) - 1;
+    size_t num_cols = Simulation_GetNumColumns(sim, BOUND_RING_POINTS) - 1;
+    size_t matrix_size = num_points * num_rings;
+    size_t imatrix;
+    size_t iring;
 
-    for (size_t imatrix = 0; imatrix < matrix_size; imatrix++) {
-        sim->a_wing_on_wing[imatrix] = 0.0;
-        sim->b_wing_on_wing[imatrix] = 0.0;
+    Vector3D w, v;
+    Vector3D point;
+    Vector3D normal;
+
+    if (!append) {
+        for (size_t i = 0; i < matrix_size; i++) {
+            sim->a_wing_on_wing[i] = 0.0;
+            sim->b_wing_on_wing[i] = 0.0;
+        }
     }
 
-    for (int mirror = 0; mirror < 2; mirror++) {
-        for (size_t ipoint = 0; ipoint < num_control_points; ipoint++) {
-            normal_copy = sim->normals[ipoint];
-            point_copy = sim->control_points[ipoint];
+    for (size_t ipoint = 0; ipoint < num_points; ipoint++) {
+        point = sim->control_points[ipoint];
+        normal = sim->normals[ipoint];
 
-            if (mirror) {
-                point_copy.y = -point_copy.y;
-                normal_copy.y = -normal_copy.y;
-            }
+        if (mirror) {
+            point.y = -point.y;
+            normal.y = -normal.y;
+        }
 
-            iring = 0;
+        iring = 0;
+        for (int i = 0; i < num_rows; i++) {
+            for (int j = 0; j < num_cols; j++) {
+                Simulation_InduceUnitVelocities(sim, BOUND_RING_POINTS, i, j, &point);
 
-            for (int i = 0; i < num_rows; i++) {
-                for (int j = 0; j < num_cols; j++) {
-                    Simulation_InduceUnitVelocities(sim, BOUND_RING_POINTS, i, j, &point_copy);
-                                      
-                    imatrix = ipoint * num_rings + iring;
+                w.x = sim->unit_velocities[1].x + sim->unit_velocities[3].x;
+                w.y = sim->unit_velocities[1].y + sim->unit_velocities[3].y;
+                w.z = sim->unit_velocities[1].z + sim->unit_velocities[3].z;
 
-                    Vector3D_Add(sim->unit_velocities + 1, sim->unit_velocities + 3, &w_induced);
-                    Vector3D_Add(sim->unit_velocities, sim->unit_velocities + 2, &v_induced);
-                    Vector3D_Add(&v_induced, &w_induced, &v_induced);
+                v.x = w.x + sim->unit_velocities[0].x + sim->unit_velocities[2].x;
+                v.y = w.y + sim->unit_velocities[0].y + sim->unit_velocities[2].y;
+                v.z = w.z + sim->unit_velocities[0].z + sim->unit_velocities[2].z;
 
-                    sim->a_wing_on_wing[imatrix] += Vector3D_Dot(&v_induced, &normal_copy);
-                    sim->b_wing_on_wing[imatrix] += Vector3D_Dot(&w_induced, &normal_copy);
+                imatrix = ipoint * num_rings + iring;
 
-                    iring++;
-                }
+                sim->a_wing_on_wing[imatrix] += v.x * normal.x + v.y * normal.y + v.z * normal.z;
+                sim->b_wing_on_wing[imatrix] += w.x * normal.x + w.y * normal.y + w.z * normal.z;
+
+                iring++;
             }
         }
     }
 }
 
-void Simulation_ComputeWakeInducedVelocities(Simulation *sim) {
-    Vector3D induced_velocity;
-    Vector3D point_copy;
-    Vector3D zeros = {0.0, 0.0, 0.0};
-
-    int num_rows = Simulation_GetNumRows(sim, WAKE_RING_POINTS) - 1;
-    int num_cols = Simulation_GetNumColumns(sim, WAKE_RING_POINTS) - 1;
-
-    size_t iring;
-    size_t imatrix;
-    size_t num_control_points = Simulation_GetNumPoints(sim, CONTROL_POINTS);
+void Simulation_ComputeWakeInducedVelocities(Simulation *sim, bool append, bool mirror) {
+    size_t num_points = Simulation_GetNumPoints(sim, CONTROL_POINTS);
     size_t num_rings = Simulation_GetNumQuads(sim, WAKE_RING_POINTS);
-    size_t matrix_size = num_control_points * num_rings;
+    size_t num_rows = Simulation_GetNumRows(sim, WAKE_RING_POINTS) - 1;
+    size_t num_cols = Simulation_GetNumColumns(sim, WAKE_RING_POINTS) - 1;
+    size_t matrix_size = num_points * num_rings;
+    size_t imatrix;
+    size_t iring;
 
-    for (size_t imatrix = 0; imatrix < matrix_size; imatrix++) {
-        sim->wake_induced_velocities[imatrix] = zeros;
+    double gamma;
+
+    Vector3D v, w;
+    Vector3D point;
+
+    if (!append) {
+        for (size_t i = 0; i < matrix_size; i++) {
+            sim->wake_induced_velocities[i].x = 0.0;
+            sim->wake_induced_velocities[i].y = 0.0;
+            sim->wake_induced_velocities[i].z = 0.0;
+        }
     }
 
-    for (int mirror = 0; mirror < 2; mirror++) {
-        for (size_t ipoint = 0; ipoint < num_control_points; ipoint++) {
-            point_copy = sim->control_points[ipoint];
+    for (size_t ipoint = 0; ipoint < num_points; ipoint++) {
+        point = sim->control_points[ipoint];
 
-            if (mirror) {
-                point_copy.y = -point_copy.y;
+        if (mirror) {
+            point.y = -point.y;
+        }
+
+        iring = 0;
+        for (int i = 0; i < num_rows; i++) {
+            for (int j = 0; j < num_cols; j++) {
+                gamma = sim->wake_vortex_strengths[iring];
+
+                Simulation_InduceUnitVelocities(sim, WAKE_RING_POINTS, i, j, &point);
+
+                w.x = sim->unit_velocities[1].x + sim->unit_velocities[3].x;
+                w.y = sim->unit_velocities[1].y + sim->unit_velocities[3].y;
+                w.z = sim->unit_velocities[1].z + sim->unit_velocities[3].z;
+
+                v.x = w.x + sim->unit_velocities[0].x + sim->unit_velocities[2].x;
+                v.y = w.y + sim->unit_velocities[0].y + sim->unit_velocities[2].y;
+                v.z = w.z + sim->unit_velocities[0].z + sim->unit_velocities[2].z;
+
+                imatrix = ipoint * num_rings + iring;
+
+                sim->wake_induced_velocities[imatrix].x += v.x * gamma;
+                sim->wake_induced_velocities[imatrix].y += v.y * gamma;
+                sim->wake_induced_velocities[imatrix].z += v.z * gamma;
+
+                iring++;
             }
+        }
+    }
+}
 
-            iring = 0;
+void Simulation_ComputeWakePointDisplacements(Simulation *sim, Geometry geometry, bool append, bool mirror) {
+    size_t num_points = Simulation_GetNumPoints(sim, WAKE_RING_POINTS);
+    size_t num_rows = Simulation_GetNumRows(sim, geometry) - 1;
+    size_t num_cols = Simulation_GetNumColumns(sim, geometry) - 1;
+    size_t iring;
 
-            for (int i = 0; i < num_rows; i++) {
-                for (int j = 0; j < num_cols; j++) {
-                    Simulation_InduceUnitVelocities(sim, WAKE_RING_POINTS, i, j, &point_copy);
-                                      
-                    imatrix = ipoint * num_rings + iring;
+    double gamma;
+    double *gammas;
 
-                    Vector3D_Add(sim->unit_velocities, sim->unit_velocities + 1, &induced_velocity);
-                    Vector3D_Add(sim->unit_velocities + 2, &induced_velocity, &induced_velocity);
-                    Vector3D_Add(sim->unit_velocities + 3, &induced_velocity, &induced_velocity);
-                    Vector3D_Multiply(&induced_velocity, sim->wake_vortex_strengths[iring]);
-                    Vector3D_Add(&induced_velocity, sim->wake_induced_velocities + imatrix, 
-                                                    sim->wake_induced_velocities + imatrix);
+    Vector3D v, w;
+    Vector3D point;
 
-                    iring++;
-                }
+    if (!append) {
+        for (size_t i = 0; i < num_points; i++) {
+            sim->wake_point_displacements[i].x = 0.0;
+            sim->wake_point_displacements[i].y = 0.0;
+            sim->wake_point_displacements[i].z = 0.0;
+        }
+    }
+
+    if (geometry == BOUND_RING_POINTS) {
+        gammas = sim->bound_vortex_strengths;
+    } else if (geometry == WAKE_RING_POINTS) {
+        gammas = sim->wake_vortex_strengths;
+    } else {
+        fprintf(stderr, "Simulation_ComputeWakePointDisplacements: provided geometry type has no associated vorticity strengths");
+
+        return;
+    }
+
+    for (size_t ipoint = 0; ipoint < num_points; ipoint++) {
+        point = sim->wake_ring_points[ipoint];
+
+        if (mirror) {
+            point.y = -point.y;
+        }
+
+        iring = 0;
+        for (int i = 0; i < num_rows; i++) {
+            for (int j = 0; j < num_cols; j++) {
+                gamma = gammas[iring];
+
+                Simulation_InduceUnitVelocities(sim, geometry, i, j, &point);
+
+                w.x = sim->unit_velocities[1].x + sim->unit_velocities[3].x;
+                w.y = sim->unit_velocities[1].y + sim->unit_velocities[3].y;
+                w.z = sim->unit_velocities[1].z + sim->unit_velocities[3].z;
+
+                v.x = w.x + sim->unit_velocities[0].x + sim->unit_velocities[2].x;
+                v.y = w.y + sim->unit_velocities[0].y + sim->unit_velocities[2].y;
+                v.z = w.z + sim->unit_velocities[0].z + sim->unit_velocities[2].z;
+
+                sim->wake_point_displacements[ipoint].x += v.x * gamma * sim->delta_time;
+                sim->wake_point_displacements[ipoint].y += v.y * gamma * sim->delta_time;
+                sim->wake_point_displacements[ipoint].z += v.z * gamma * sim->delta_time;
+
+                iring++;
             }
         }
     }
@@ -769,82 +838,107 @@ void Simulation_Solve(Simulation *sim) {
 }
 
 void Simulation_RollupWake(Simulation *sim) {
-    int num_rows;
-    int num_cols;
+    Simulation_ComputeWakePointDisplacements(sim, BOUND_RING_POINTS, false, false);
+    Simulation_ComputeWakePointDisplacements(sim, BOUND_RING_POINTS, true, true);
+    Simulation_ComputeWakePointDisplacements(sim, WAKE_RING_POINTS, true, false);
+    Simulation_ComputeWakePointDisplacements(sim, WAKE_RING_POINTS, true, true);
 
-    size_t iring;
+    int num_cols = Simulation_GetNumColumns(sim, WAKE_RING_POINTS);
     size_t num_points = Simulation_GetNumPoints(sim, WAKE_RING_POINTS);
 
-    bool rollup_y;
+    bool apply_y_displacement;
 
-    Vector3D point_copy;
-    Vector3D induced_velocity;
+    for (size_t i = 0; i < num_points; i++) {
+        apply_y_displacement = (bool) (i % num_cols);
 
-    Vector3D *points = sim->wake_ring_points;
-    Vector3D *displacements = sim->wake_point_displacements;
+        sim->wake_ring_points[i].x += sim->wake_point_displacements[i].x;
+        sim->wake_ring_points[i].z += sim->wake_point_displacements[i].z;
 
-    Geometry geometry;
-    Geometry geometries[2] = {BOUND_RING_POINTS, WAKE_RING_POINTS};
+        if (apply_y_displacement) {
+            sim->wake_ring_points[i].y += sim->wake_point_displacements[i].y;
+        }
+    }
+}
 
+void Simulation_ComputePressures(Simulation *sim) {
+    if (!sim->iteration) {
+        for (size_t i = 0; i < Simulation_GetNumPoints(sim, CONTROL_POINTS); i++) {
+            sim->pressures[i] = 0.0;
+        }
+
+        return;
+    }
+
+    double chordwise_dot;
+    double spanwise_dot;
+    double gamma_previ;
+    double gamma_prevj;
+    double derivative;
     double gamma;
-    double *gammas;
+    double normz;
+    double lift;
+    double dx;
+    double dy;
 
-    for (int igeometry = 0; igeometry < 2; igeometry++) {
-        geometry = geometries[igeometry];
+    size_t ivortex;
 
-        num_rows = Simulation_GetNumRows(sim, geometry) - 1;
-        num_cols = Simulation_GetNumColumns(sim, geometry) - 1;
+    Vector3D back;
+    Vector3D front;
+    Vector3D left;
+    Vector3D right;
+    Vector3D velocity;
+    Vector3D *corners[4];
 
-        if (geometry == BOUND_RING_POINTS) {
-            gammas = sim->bound_vortex_strengths;
-        } else {
-            gammas = sim->wake_vortex_strengths;
-        }
+    lift = 0.0;
 
-        for (int mirror = 0; mirror < 2; mirror++) {
-            for (size_t ipoint = 0; ipoint < num_points; ipoint++) {
-                rollup_y = ipoint % sim->wing->num_spanwise_panels;
+    int num_rows = Simulation_GetNumRows(sim, CONTROL_POINTS);
+    int num_cols = Simulation_GetNumColumns(sim, CONTROL_POINTS);
 
-                point_copy = points[ipoint];
+    for (int j = 0; j < num_cols; j++) {
+        for (int i = 0; i < num_rows; i++) {
+            ivortex = Sub2Ind(i, j, num_cols);
 
-                if (mirror) {
-                    point_copy.y = -point_copy.y;
-                }
+            Simulation_GetCorners(sim, SURFACE_POINTS, i, j, corners);
 
-                iring = 0;
+            Vector3D_Subtract(corners[3], corners[2], &back);
+            Vector3D_Subtract(corners[1], corners[0], &front);
+            Vector3D_Subtract(corners[3], corners[0], &left);
+            Vector3D_Subtract(corners[2], corners[1], &right);
 
-                for (int i = 0; i < num_rows; i++) {
-                    for (int j = 0; j < num_cols; j++) {
-                        gamma = gammas[iring];
+            normz = sim->normals[ivortex].z;
+            
+            dx = (Vector3D_Magnitude(&left) + Vector3D_Magnitude(&right)) / 2.0;
+            dy = (Vector3D_Magnitude(&front) + Vector3D_Magnitude(&back)) / 2.0;
 
-                        Simulation_InduceUnitVelocities(sim, geometry, i, j, &point_copy);
+            gamma = sim->bound_vortex_strengths[ivortex];
 
-                        induced_velocity.x = (sim->unit_velocities[0].x + sim->unit_velocities[1].x +
-                                              sim->unit_velocities[2].x + sim->unit_velocities[3].x) * gamma;
-
-                        sim->wake_point_displacements[ipoint].x += induced_velocity.x * sim->delta_time;
-
-                        induced_velocity.z = (sim->unit_velocities[0].z + sim->unit_velocities[1].z +
-                                              sim->unit_velocities[2].z + sim->unit_velocities[3].z) * gamma;
-
-                        sim->wake_point_displacements[ipoint].z += induced_velocity.z * sim->delta_time;
-
-                        if (rollup_y) {
-                            induced_velocity.y = (sim->unit_velocities[0].y + sim->unit_velocities[1].y +
-                                                  sim->unit_velocities[2].y + sim->unit_velocities[3].y) * gamma;
-
-                            sim->wake_point_displacements[ipoint].y += induced_velocity.y * sim->delta_time;
-                        }
-
-                        iring++;
-                    }
-                }
+            if (i) {
+                gamma_previ = sim->bound_vortex_strengths[Sub2Ind(i - 1, j, num_cols)];
+            } else {
+                gamma_previ = 0.0;
             }
+
+            if (j) {
+                gamma_prevj = sim->bound_vortex_strengths[Sub2Ind(i, j - 1, num_cols)];
+            } else {
+                gamma_prevj = 0.0;
+            }
+
+            derivative = (gamma - sim->last_bound_vortex_strengths[ivortex]) / sim->delta_time;
+
+            sim->last_bound_vortex_strengths[ivortex] = gamma;
+
+            Vector3D_Add(sim->kinematic_velocities + ivortex, sim->wake_induced_velocities + ivortex, &velocity);
+            
+            spanwise_dot = Vector3D_Dot(&velocity, sim->spanwise_tangents + ivortex);
+            chordwise_dot = Vector3D_Dot(&velocity, sim->chordwise_tangents + ivortex);
+
+            sim->pressures[ivortex] = sim->air_density * (chordwise_dot * (gamma - gamma_previ) / dx +
+                                                           spanwise_dot * (gamma - gamma_prevj) / dy + derivative);
+
+            lift -= dx * dy * sim->pressures[ivortex] * normz;
         }
     }
 
-    for (size_t ipoint = 0; ipoint < num_points; ipoint++) {
-        Vector3D_Add(points + ipoint, displacements + ipoint, points + ipoint);
-        Vector3D_Multiply(displacements + ipoint, 0.0);
-    }
+    sim->wing->lift = lift;
 }

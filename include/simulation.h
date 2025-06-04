@@ -16,6 +16,7 @@ typedef struct Simulation {
     bool has_updated_geometry;
 
     double delta_time;
+    double air_density;
     double cutoff_radius;
     double starting_vortex_offset;
 
@@ -54,8 +55,10 @@ void Simulation_ComputeSurfaceAreas(Simulation *sim);
 void Simulation_ComputeKinematicVelocities(Simulation *sim);
 void Simulation_ComputeBoundRingPoints(Simulation *sim);
 void Simulation_ComputeControlPoints(Simulation *sim);
-void Simulation_ComputeCoefficients(Simulation *sim);
-void Simulation_ComputeWakeInducedVelocities(Simulation *sim);
+void Simulation_ComputePressures(Simulation *sim);
+void Simulation_ComputeCoefficients(Simulation *sim, bool append, bool mirror);
+void Simulation_ComputeWakeInducedVelocities(Simulation *sim, bool append, bool mirror);
+void Simulation_ComputeWakePointDisplacements(Simulation *sim, Geometry geometry, bool append, bool mirror);
 void Simulation_RollupWake(Simulation *sim);
 void Simulation_ShedWake(Simulation *sim);
 void Simulation_Process(Simulation *sim);
@@ -69,7 +72,7 @@ int Simulation_GetNumColumns(const Simulation* sim, Geometry geometry);
 size_t Simulation_GetNumPoints(const Simulation* sim, Geometry geometry);
 size_t Simulation_GetNumQuads(const Simulation* sim, Geometry geometry);
 Vector3D *Simulation_GetPoints(const Simulation *sim, Geometry geometry);
-Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time,
+Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, double air_density, 
                             double starting_vortex_offset, double cutoff_radius);
 
 #endif

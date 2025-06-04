@@ -21,8 +21,8 @@
 #define ANGLE_OF_ATTACK 5.0
 #define HEAVING_FREQUENCY 0.0
 #define HEAVING_AMPLITUDE 0.0
-#define PITCHING_FREQUENCY 2.0
-#define PITCHING_AMPLITUDE 5.0
+#define PITCHING_FREQUENCY 0.0
+#define PITCHING_AMPLITUDE 0.0
 #define FAR_FIELD_VELOCITY 10.0
 #define NUM_SPANWISE_PANELS 13
 #define NUM_CHORDWISE_PANELS 4
@@ -45,11 +45,19 @@ int main(int argc, char **argv) {
                  .leading_sweep_angle = LEADING_SWEEP,
                  .trailing_sweep_angle = TRAILING_SWEEP};
 
-    Simulation *sim = Simulation_Init(&wing, NUM_TIME_STEPS, dt, dx_wake, CUTOFF);
+    Simulation *sim = Simulation_Init(&wing, NUM_TIME_STEPS, dt, AIR_DENSITY, dx_wake, CUTOFF);
     
     Simulation_WritePoints2VTK(sim, SURFACE_POINTS, FILE_PATH);                     
     Simulation_WritePoints2VTK(sim, CONTROL_POINTS, FILE_PATH);                     
     Simulation_WritePoints2VTK(sim, BOUND_RING_POINTS, FILE_PATH); 
+
+    FILE *file = fopen("lift_debug.txt", "w");
+
+    if (file == NULL) {
+        fprintf(stderr, "main: error opening file");
+
+        return 1;
+    }
 
     while (!sim->is_complete) {
         t += dt;
@@ -59,6 +67,8 @@ int main(int argc, char **argv) {
         wing.rotation.y = PITCHING_AMPLITUDE * sin(2.0 * PI * PITCHING_FREQUENCY * t) * PI / 180.0;
         
         Simulation_Process(sim);
+        
+        fprintf(file, "Step %d: Lift = %f N\n", sim->iteration, wing.lift);
 
         if (sim->iteration > 0) {
             Simulation_WritePoints2VTK(sim, WAKE_RING_POINTS, FILE_PATH);
@@ -69,9 +79,10 @@ int main(int argc, char **argv) {
     Wing_Print(&wing);
 
     double elapsed_time = ((double) (clock() - start)) / CLOCKS_PER_SEC;
-    printf("Elapsed Time: %.2f sec\n", elapsed_time);
 
+    printf("Elapsed Time: %.2f sec\n", elapsed_time);
     Simulation_Deallocate(sim);
+    fclose(file);
 
     return 0;
 }
