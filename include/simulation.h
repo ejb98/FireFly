@@ -60,6 +60,7 @@ void Simulation_ComputePressures(Simulation *sim);
 void Simulation_ComputeCoefficients(Simulation *sim, bool append, bool mirror);
 void Simulation_ComputeWakeInducedVelocities(Simulation *sim, bool append, bool mirror);
 void Simulation_ComputeWakePointDisplacements(Simulation *sim, Geometry geometry, bool append, bool mirror);
+void Simulation_HandleResultsPath(Simulation *sim, const char *results_path);
 void Simulation_RollupWake(Simulation *sim);
 void Simulation_ShedWake(Simulation *sim);
 void Simulation_Process(Simulation *sim);

@@ -34,7 +34,6 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, d
 
     sim->iteration = -1;
     sim->num_time_steps = num_time_steps;
-
     sim->pivot_vector = (int *) malloc(sizeof(int) * num_control_points);
 
     if (sim->pivot_vector == NULL) {
@@ -44,31 +43,6 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, d
     }
 
     sim->is_complete = false;
-
-    size_t path_length = strlen(results_path);
-    bool needs_separator = results_path[path_length - 1] != PATH_SEPARATOR;
-
-    size_t num_elements = path_length + needs_separator + 1;
-    sim->results_path = (char *) malloc(sizeof(char) * num_elements);
-
-    if (sim->results_path == NULL) {
-        fprintf(stderr, "Simulation_Init: malloc returned NULL");
-
-        return NULL;
-    }
-
-    if (needs_separator) {
-        snprintf(sim->results_path, num_elements, "%s%c", results_path, PATH_SEPARATOR);
-    } else {
-        strncpy(sim->results_path, results_path, num_elements);
-    }
-
-    for (size_t ichar = 0; ichar < strlen(sim->results_path); ichar++) {
-        if (sim->results_path[ichar] == OTHER_SEPARATOR) {
-            sim->results_path[ichar] = PATH_SEPARATOR;
-        }
-    }
-
     sim->delta_time = delta_time;
     sim->air_density = air_density;
     sim->cutoff_radius = cutoff_radius;
@@ -84,7 +58,6 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, d
     sim->bound_vortex_strengths = AllocateDoubles(num_control_points);
 
     sim->wing = wing;
-
     sim->chordwise_velocity_buffer = zeros;
 
     sim->normals = Vector3D_Allocate(num_control_points);
@@ -100,6 +73,7 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, d
     sim->spanwise_velocity_buffer = Vector3D_Allocate(wing->num_spanwise_panels);
     sim->wake_point_displacements = Vector3D_Allocate(num_wake_points_max);
 
+    Simulation_HandleResultsPath(sim, results_path);
     Simulation_ComputeSurfacePoints(sim);
     Simulation_ComputeSurfaceAreas(sim);
     Simulation_ComputeSurfaceVectors(sim);
@@ -112,6 +86,32 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, d
     Simulation_WritePoints2VTK(sim, BOUND_RING_POINTS);
 
     return sim;
+}
+
+void Simulation_HandleResultsPath(Simulation *sim, const char *results_path) {
+    size_t path_length = strlen(results_path);
+    bool needs_separator = results_path[path_length - 1] != PATH_SEPARATOR;
+
+    size_t num_elements = path_length + needs_separator + 1;
+    sim->results_path = (char *) malloc(sizeof(char) * num_elements);
+
+    if (sim->results_path == NULL) {
+        fprintf(stderr, "Simulation_HandleResultsPath: malloc returned NULL");
+
+        return;
+    }
+
+    if (needs_separator) {
+        snprintf(sim->results_path, num_elements, "%s%c", results_path, PATH_SEPARATOR);
+    } else {
+        strncpy(sim->results_path, results_path, num_elements);
+    }
+
+    for (size_t ichar = 0; ichar < strlen(sim->results_path); ichar++) {
+        if (sim->results_path[ichar] == OTHER_SEPARATOR) {
+            sim->results_path[ichar] = PATH_SEPARATOR;
+        }
+    }
 }
 
 void Simulation_Deallocate(Simulation *sim) {    
