@@ -21,8 +21,6 @@ typedef struct Simulation {
     double cutoff_radius;
     double starting_vortex_offset;
 
-    double *pressures;
-    double *last_integral;
     double *a_wing_on_wing;
     double *b_wing_on_wing;
     double *surface_areas;
@@ -56,7 +54,6 @@ void Simulation_ComputeSurfaceAreas(Simulation *sim);
 void Simulation_ComputeKinematicVelocities(Simulation *sim);
 void Simulation_ComputeBoundRingPoints(Simulation *sim);
 void Simulation_ComputeControlPoints(Simulation *sim);
-void Simulation_ComputePressures(Simulation *sim);
 void Simulation_ComputeCoefficients(Simulation *sim, bool append, bool mirror);
 void Simulation_ComputeWakeInducedVelocities(Simulation *sim, bool append, bool mirror);
 void Simulation_ComputeWakePointDisplacements(Simulation *sim, Geometry geometry, bool append, bool mirror);
@@ -68,7 +65,6 @@ void Simulation_Solve(Simulation *sim);
 void Simulation_Deallocate(Simulation *sim);
 void Simulation_InduceUnitVelocities(Simulation *sim, Geometry geometry, int i, int j, const Vector3D *point);
 void Simulation_WritePoints2VTK(const Simulation *sim, Geometry geometry);
-void Simulation_WritePressures2CSV(const Simulation *sim);
 void Simulation_GetCorners(const Simulation *sim, Geometry geometry, int i, int j, Vector3D *corners[]);
 int Simulation_GetNumRows(const Simulation* sim, Geometry geometry);
 int Simulation_GetNumColumns(const Simulation* sim, Geometry geometry);

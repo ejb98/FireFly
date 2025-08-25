@@ -48,8 +48,6 @@ Simulation *Simulation_Init(Wing *wing, int num_time_steps, double delta_time, d
     sim->cutoff_radius = cutoff_radius;
     sim->starting_vortex_offset = starting_vortex_offset;
 
-    sim->pressures = AllocateDoubles(num_control_points);
-    sim->last_integral = AllocateDoubles(num_control_points);
     sim->a_wing_on_wing = AllocateDoubles(num_control_points * num_control_points);
     sim->b_wing_on_wing = AllocateDoubles(num_control_points * num_control_points);
     sim->surface_areas = AllocateDoubles(num_control_points);
@@ -118,8 +116,6 @@ void Simulation_Deallocate(Simulation *sim) {
     free(sim->pivot_vector);
     free(sim->results_path);
 
-    free(sim->pressures);
-    free(sim->last_integral);
     free(sim->a_wing_on_wing);
     free(sim->b_wing_on_wing);
     free(sim->surface_areas);
@@ -472,15 +468,12 @@ void Simulation_Process(Simulation *sim) {
         Simulation_ComputeWakeInducedVelocities(sim, true, true);
         Simulation_Solve(sim);
     }
-    
-    Simulation_ComputePressures(sim);
-    Simulation_WritePressures2CSV(sim);
 
     if (sim->iteration > 0 && sim->iteration < sim->num_time_steps - 1) {
         Simulation_RollupWake(sim);
     }
 
-    printf("done: Lift = %f N\n", sim->wing->lift);
+    printf("done!\n");
 
     if (sim->iteration == sim->num_time_steps - 1) {
         sim->is_complete = true;
@@ -898,170 +891,4 @@ void Simulation_RollupWake(Simulation *sim) {
             sim->wake_ring_points[i].y += sim->wake_point_displacements[i].y;
         }
     }
-}
-
-void Simulation_ComputePressures(Simulation *sim) {
-    if (!sim->iteration) {
-        for (size_t i = 0; i < Simulation_GetNumPoints(sim, CONTROL_POINTS); i++) {
-            sim->pressures[i] = 0.0;
-        }
-
-        sim->wing->lift = 0.0;
-
-        return;
-    }
-
-    double a;
-    double b;
-    double dx;
-    double dy;
-    double lift;
-    double gamma;
-    double integral;
-    double derivative;
-    double gamma_previ;
-    double gamma_prevj;
-    double spanwise_dot;
-    double chordwise_dot;
-
-    size_t imatrix;
-    size_t ivortex;
-    size_t num_wake_rings = Simulation_GetNumQuads(sim, WAKE_RING_POINTS);
-
-    Vector3D back;
-    Vector3D left;
-    Vector3D front;
-    Vector3D right;
-    Vector3D leading;
-    Vector3D velocity;
-    Vector3D wake_induced_velocity;
-
-    Vector3D *corners[4];
-    
-    lift = 0.0;
-
-    int num_rows = Simulation_GetNumRows(sim, CONTROL_POINTS);
-    int num_cols = Simulation_GetNumColumns(sim, CONTROL_POINTS);
-
-    for (int j = 0; j < num_cols; j++) {
-
-        integral = 0.0;
-        for (int i = 0; i < num_rows; i++) {
-            wake_induced_velocity.x = 0.0;
-            wake_induced_velocity.y = 0.0;
-            wake_induced_velocity.z = 0.0;
-
-            ivortex = Sub2Ind(i, j, num_cols);
-
-            Simulation_GetCorners(sim, SURFACE_POINTS, i, j, corners);
-
-            Vector3D_Subtract(corners[3], corners[2], &back);
-            Vector3D_Subtract(corners[1], corners[0], &front);
-            Vector3D_Subtract(corners[3], corners[0], &left);
-            Vector3D_Subtract(corners[2], corners[1], &right);
-            
-            dx = (Vector3D_Magnitude(&left) + Vector3D_Magnitude(&right)) / 2.0;
-            dy = (Vector3D_Magnitude(&front) + Vector3D_Magnitude(&back)) / 2.0;
-
-            gamma = sim->bound_vortex_strengths[ivortex];
-
-            if (i) {
-                gamma_previ = sim->bound_vortex_strengths[Sub2Ind(i - 1, j, num_cols)];
-
-                a = sim->control_points[Sub2Ind(i - 1, j, num_cols)].x - leading.x;
-                b = sim->control_points[ivortex].x - leading.x;
-
-                integral += (b - a) * (1.5 * gamma - 0.5 * gamma_previ);
-            } else {
-                gamma_previ = 0.0;
-
-                Vector3D_Lerp(corners[0], corners[1], 0.5, &leading);
-            }
-
-            if (j) {
-                gamma_prevj = sim->bound_vortex_strengths[Sub2Ind(i, j - 1, num_cols)];
-            } else {
-                gamma_prevj = 0.0;
-            }
-
-            derivative = (integral - sim->last_integral[ivortex]) / sim->delta_time;
-
-            sim->last_integral[ivortex] = integral;
-
-            for (size_t iwake = 0; iwake < num_wake_rings; iwake++) {
-                imatrix = ivortex * num_wake_rings + iwake;
-
-                wake_induced_velocity.x += sim->wake_induced_velocities[imatrix].x;
-                wake_induced_velocity.y += sim->wake_induced_velocities[imatrix].y;
-                wake_induced_velocity.z += sim->wake_induced_velocities[imatrix].z;
-            }
-
-            Vector3D_Add(sim->kinematic_velocities + ivortex, &wake_induced_velocity, &velocity);
-            
-            spanwise_dot = Vector3D_Dot(&velocity, sim->spanwise_tangents + ivortex);
-            chordwise_dot = Vector3D_Dot(&velocity, sim->chordwise_tangents + ivortex);
-
-            sim->pressures[ivortex] = sim->air_density * (chordwise_dot * (gamma - gamma_previ) / dx +
-                                                           spanwise_dot * (gamma - gamma_prevj) / dy + derivative);
-
-            lift -= sim->surface_areas[ivortex] * sim->pressures[ivortex] * sim->normals[ivortex].z;;
-        }
-    }
-
-    sim->wing->lift = lift;
-}
-
-void Simulation_WritePressures2CSV(const Simulation *sim) {
-    size_t num_elements = strlen(sim->results_path) + 14;
-    size_t num_points = Simulation_GetNumPoints(sim, CONTROL_POINTS);
-
-    char *full_path = (char *) malloc(sizeof(char) * num_elements);
-
-    if (full_path == NULL) {
-        fprintf(stderr, "Simulation_WritePressures2CSV: malloc returned NULL");
-
-        return;
-    }
-
-    snprintf(full_path, num_elements, "%spressures.csv", sim->results_path);
-
-    FILE *file;
-
-    if (sim->iteration) {
-        file = fopen(full_path, "a");
-    } else {
-        file = fopen(full_path, "w");
-    }
-
-    if (file == NULL) {
-        fprintf(stderr, "Simulation_WritePressures2CSV: failed to open %s", full_path);
-        free(full_path);
-
-        return;
-    }
-
-    if (!sim->iteration) {
-        fprintf(file, "t,");
-
-        for (size_t i = 0; i < num_points; i++) {
-            if (i == num_points - 1) {
-                fprintf(file, "c%zu\n", i);
-            } else {
-                fprintf(file, "c%zu,", i);
-            }
-        }
-    }
-
-    fprintf(file, "%f,", sim->iteration * sim->delta_time);
-
-    for (size_t i = 0; i < num_points; i++) {
-        if (i == num_points - 1) {
-            fprintf(file, "%f\n", sim->pressures[i]);
-        } else {
-            fprintf(file, "%f,", sim->pressures[i]);
-        }
-    }
-
-    fclose(file);
-    free(full_path);
 }

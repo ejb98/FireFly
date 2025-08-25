@@ -10,7 +10,6 @@ typedef struct Wing {
     int num_spanwise_panels;
     int num_chordwise_panels;
     
-    double lift;
     double semi_span;
     double root_chord;
     double angle_of_attack;
